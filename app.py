@@ -106,7 +106,11 @@ def load_principles_data():
 
 @st.cache_data
 def load_best_practices():
-    df = pd.read_csv("/mnt/user-data/uploads/Form_Data_Entry-Grid_view.csv")
+    import os
+    # Works both locally and on Streamlit Cloud
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_path = os.path.join(base_dir, "Form_Data_Entry-Grid_view.csv")
+    df = pd.read_csv(csv_path)
     df.columns = [c.strip() for c in df.columns]
     return df
 
