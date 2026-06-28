@@ -109,7 +109,7 @@ def load_best_practices():
     import os
     # Works both locally and on Streamlit Cloud
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    csv_path = os.path.join(base_dir, "Form_Data_Entry-Grid_view.csv")
+    csv_path = os.path.join(base_dir, "Form Data Entry-Grid view.csv")
     df = pd.read_csv(csv_path)
     df.columns = [c.strip() for c in df.columns]
     return df
