@@ -13,7 +13,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ── Data ───────────────────────────────────────────────────────────────────
 @st.cache_data
 def load_country_data():
     return pd.DataFrame([
@@ -30,7 +29,7 @@ def load_country_data():
         ("Slovakia","Europe",1,20,48.66,19.69),
         ("Slovenia","Europe",1,5,46.15,14.99),
         ("Switzerland","Europe",1,12,46.81,8.22),
-        ("South Korea","Asia",3,401,35.90,127.76),
+        ("South Korea","Asia",4,401,35.90,127.76),
         ("China","Asia",1,3167,35.86,104.19),
         ("Philippines","Asia",1,366,12.87,121.77),
         ("Hong Kong SAR","Asia",1,10,22.39,114.10),
@@ -45,7 +44,7 @@ def load_regional_data():
     return pd.DataFrame([
         ("North America",2,23,117),
         ("Europe",13,44,22),
-        ("Asia",4,48,6),
+        ("Asia",4,48,7),
         ("Oceania",1,14,2),
         ("South America",2,12,5),
         ("Africa",1,54,1),
@@ -75,13 +74,13 @@ def load_best_practices():
     return df
 
 REGION_COLORS = {
-    "North America": "#2E6DA4",
-    "Europe": "#27AE60",
-    "Asia": "#E74C3C",
-    "Oceania": "#F39C12",
-    "South America": "#8E44AD",
-    "Africa (Unofficial)": "#95A5A6",
-    "Africa": "#95A5A6",
+    "North America": "#E63946",
+    "Europe": "#2196F3",
+    "Asia": "#FF9800",
+    "Oceania": "#9C27B0",
+    "South America": "#00BCD4",
+    "Africa (Unofficial)": "#4CAF50",
+    "Africa": "#4CAF50",
 }
 GAP_COLORS = {
     "Well Implemented": "#27AE60",
@@ -89,7 +88,6 @@ GAP_COLORS = {
     "Underimplemented": "#E74C3C",
 }
 
-# ── Sidebar ────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 🎓 AFU GN Dashboard")
     page = st.radio("Navigate", [
@@ -120,7 +118,7 @@ if page == "🌍 Global Overview":
     st.divider()
 
     c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("Member Institutions", "153")
+    c1.metric("Member Institutions", "156")
     c2.metric("Countries Represented", "21")
     c3.metric("Countries Worldwide", "195")
     c4.metric("Best Practice Submissions", "25")
@@ -139,15 +137,21 @@ if page == "🌍 Global Overview":
         size_max=50, projection="natural earth",
     )
     fig_map.update_layout(
-        height=460, margin=dict(l=0, r=0, t=10, b=0),
-        geo=dict(showframe=False, showcoastlines=True,
-                 coastlinecolor="#CCCCCC", showland=True,
-                 landcolor="#F0F0F0", showocean=True, oceancolor="#D6EAF8"),
-        legend=dict(orientation="h", y=-0.05)
+        height=500, margin=dict(l=0, r=0, t=10, b=0),
+        geo=dict(
+            showframe=False,
+            showcoastlines=True, coastlinecolor="#FFFFFF",
+            showland=True, landcolor="#A8D5A2",
+            showocean=True, oceancolor="#5BA4CF",
+            showlakes=True, lakecolor="#7EC8E3",
+            showcountries=True, countrycolor="#FFFFFF",
+            countrywidth=0.8,
+        ),
+        legend=dict(orientation="h", y=-0.05, font=dict(size=12)),
     )
     st.plotly_chart(fig_map, use_container_width=True)
 
-    st.info("💡 **Key Finding:** North America accounts for **77% of all AFU member institutions** (117/153), with the USA alone representing **70%** (106/153). Africa has no official members despite Ghana actively submitting best practices.")
+    st.info("💡 **Key Finding:** North America accounts for **77% of all AFU member institutions** (117/156), with the USA alone representing **70%** (106/156). Africa has no official members despite Ghana actively submitting best practices.")
 
     col1, col2 = st.columns(2)
     with col1:
