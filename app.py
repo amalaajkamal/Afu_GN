@@ -218,59 +218,175 @@ df_principles = load_principles_data()
 # PAGE 1 — GLOBAL OVERVIEW
 # ══════════════════════════════════════════════════════════════════════════
 if page == "🌍 Global Overview":
-    st.title("🌍 AFU Global Network — Implementation Gap Analysis")
-    st.markdown("*Age-Friendly University Global Network • Geographic & Thematic Analysis • June 2026*")
-    st.divider()
 
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("Member Institutions", "156")
-    c2.metric("Countries Represented", "20")
-    c3.metric("Countries Worldwide", "195")
-    c4.metric("Best Practice Submissions", "25")
-    c5.metric("Submission Participation Rate", "11%")
+    # ── GeoPulse-style header ──────────────────────────────────────────────
+    st.markdown("""
+    <div style="background:#050d1a; padding:8px 0 4px 0;">
+        <span style="color:#4FC3F7; font-size:1.15rem; font-weight:800; letter-spacing:0.06em;">
+            🌍 AFU GLOBAL NETWORK — IMPLEMENTATION GAP ANALYSIS
+        </span>
+        <span style="color:#37474F; font-size:0.8rem; margin-left:12px;">
+            Geographic & Thematic Analysis • June 2026
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.divider()
-    st.subheader("🗺️ Member Institutions by Country")
+    # ── Compact KPI row ────────────────────────────────────────────────────
+    st.markdown("""
+    <div style="display:flex; gap:8px; margin:6px 0; flex-wrap:nowrap;">
+        <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px;
+                    padding:8px 16px; flex:1; text-align:center; border-top:2px solid #4FC3F7;">
+            <div style="color:#4FC3F7; font-size:1.5rem; font-weight:800;">156</div>
+            <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">Member Institutions</div>
+        </div>
+        <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px;
+                    padding:8px 16px; flex:1; text-align:center; border-top:2px solid #E63946;">
+            <div style="color:#E63946; font-size:1.5rem; font-weight:800;">77%</div>
+            <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">North America Share</div>
+        </div>
+        <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px;
+                    padding:8px 16px; flex:1; text-align:center; border-top:2px solid #27AE60;">
+            <div style="color:#27AE60; font-size:1.5rem; font-weight:800;">20</div>
+            <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">Countries</div>
+        </div>
+        <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px;
+                    padding:8px 16px; flex:1; text-align:center; border-top:2px solid #FF9800;">
+            <div style="color:#FF9800; font-size:1.5rem; font-weight:800;">25</div>
+            <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">Best Practices</div>
+        </div>
+        <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px;
+                    padding:8px 16px; flex:1; text-align:center; border-top:2px solid #EF5350;">
+            <div style="color:#EF5350; font-size:1.5rem; font-weight:800;">16%</div>
+            <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">P5 & P7 Rate</div>
+        </div>
+        <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px;
+                    padding:8px 16px; flex:1; text-align:center; border-top:2px solid #9C27B0;">
+            <div style="color:#9C27B0; font-size:1.5rem; font-weight:800;">11%</div>
+            <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">Submission Rate</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    fig_map = px.scatter_geo(
-        df_country, lat="Latitude", lon="Longitude",
-        size="AFU_Members", color="Region",
-        hover_name="Country",
-        hover_data={"AFU_Members": True, "Penetration_Pct": True,
-                    "Latitude": False, "Longitude": False},
-        color_discrete_map=REGION_COLORS,
-        size_max=50, projection="natural earth",
+    # ── Region filter state ────────────────────────────────────────────────
+    if "ov_region" not in st.session_state:
+        st.session_state.ov_region = "Global View"
+
+    region_tabs = {
+        "Global View": (156, "#4FC3F7"),
+        "North America": (117, "#E63946"),
+        "Europe": (22, "#2196F3"),
+        "Asia": (7, "#FF9800"),
+        "South America": (5, "#00BCD4"),
+        "Oceania": (2, "#9C27B0"),
+    }
+
+    # ── Map ────────────────────────────────────────────────────────────────
+    sel = st.session_state.ov_region
+    if sel == "Global View":
+        map_df = df_country.copy()
+        map_df["opacity"] = 1.0
+    else:
+        map_df = df_country.copy()
+        map_df["opacity"] = map_df["Region"].apply(lambda x: 1.0 if x == sel else 0.12)
+
+    fig_ov = go.Figure()
+
+    for region in df_country["Region"].unique():
+        rdf = map_df[map_df["Region"] == region]
+        color = REGION_COLORS.get(region, "#888")
+        opacity = float(rdf["opacity"].mean()) if len(rdf) > 0 else 1.0
+
+        # Glow ring
+        fig_ov.add_trace(go.Scattergeo(
+            lat=rdf["Latitude"], lon=rdf["Longitude"],
+            mode="markers", showlegend=False,
+            marker=dict(size=rdf["AFU_Members"].apply(lambda x: max(10, min(55, x/2.2))),
+                        color=color, opacity=opacity*0.2, line=dict(width=0)),
+            hoverinfo="skip",
+        ))
+
+        # Main dot with count label
+        fig_ov.add_trace(go.Scattergeo(
+            lat=rdf["Latitude"], lon=rdf["Longitude"],
+            mode="markers+text", name=region,
+            marker=dict(size=rdf["AFU_Members"].apply(lambda x: max(8, min(45, x/2.5))),
+                        color=color, opacity=opacity,
+                        line=dict(width=1.5, color="rgba(255,255,255,0.6)")),
+            text=rdf["AFU_Members"].astype(str),
+            textfont=dict(size=7, color="white", family="Arial Black"),
+            textposition="middle center",
+            customdata=rdf[["Country","AFU_Members","Penetration_Pct","Total_Universities"]].values,
+            hovertemplate="<b>%{customdata[0]}</b><br>AFU Members: %{customdata[1]}<br>Penetration: %{customdata[2]}%<br>Total Universities: %{customdata[3]}<extra></extra>",
+        ))
+
+    fig_ov.update_layout(
+        height=460, margin=dict(l=0, r=0, t=0, b=0),
+        paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
+        geo=dict(
+            showframe=False,
+            showcoastlines=True, coastlinecolor="#0d2137",
+            showland=True, landcolor="#0a1628",
+            showocean=True, oceancolor="#050d1a",
+            showlakes=False,
+            showcountries=True, countrycolor="#0d2137", countrywidth=0.4,
+            bgcolor="#050d1a", projection_type="natural earth",
+            lataxis=dict(range=[-55, 80]),
+        ),
+        legend=dict(
+            orientation="h", y=1.01, x=0.5, xanchor="center",
+            font=dict(color="#546E7A", size=10),
+            bgcolor="rgba(0,0,0,0)", itemsizing="constant",
+        ),
+        font=dict(color="#546E7A"),
     )
-    fig_map.update_layout(
-        height=500, margin=dict(l=0, r=0, t=10, b=0),
-        geo=dict(showframe=False, showcoastlines=True, coastlinecolor="#FFFFFF",
-                 showland=True, landcolor="#A8D5A2", showocean=True, oceancolor="#5BA4CF",
-                 showlakes=True, lakecolor="#7EC8E3", showcountries=True,
-                 countrycolor="#FFFFFF", countrywidth=0.8),
-        legend=dict(orientation="h", y=-0.05, font=dict(size=12)),
-    )
-    st.plotly_chart(fig_map, use_container_width=True)
-    st.info("💡 **Key Finding:** North America accounts for **77% of all AFU member institutions** (117/156), with the USA alone representing **70%** (106/156). The network spans 5 official regions across 20 countries.")
 
+    st.plotly_chart(fig_ov, use_container_width=True, config={"displayModeBar": False})
+
+    # ── Region tabs at bottom (GeoPulse style) ─────────────────────────────
+    tab_cols = st.columns(len(region_tabs))
+    for i, (region, (count, color)) in enumerate(region_tabs.items()):
+        with tab_cols[i]:
+            is_active = st.session_state.ov_region == region
+            bg = f"{color}33" if is_active else "#0a1628"
+            border = f"2px solid {color}" if is_active else f"1px solid #0d2137"
+            txt = color if is_active else "#546E7A"
+            if st.button(
+                f"{'🔵 ' if region=='Global View' else ''}{region}   {count}",
+                key=f"ov_tab_{region}",
+                use_container_width=True
+            ):
+                st.session_state.ov_region = region
+                st.rerun()
+
+    # ── Bottom row: donut + bar ────────────────────────────────────────────
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("Regional Share of Institutions")
+        st.markdown('<div style="color:#4FC3F7; font-size:0.8rem; font-weight:700; letter-spacing:0.08em; margin-bottom:4px;">REGIONAL SHARE</div>', unsafe_allow_html=True)
         fig_donut = px.pie(df_regional, values="AFU_Institutions", names="Region",
-                           color="Region", color_discrete_map=REGION_COLORS, hole=0.45)
-        fig_donut.update_traces(textinfo="percent+label", textposition="outside")
-        fig_donut.update_layout(height=380, showlegend=False, margin=dict(l=20,r=20,t=20,b=20))
-        st.plotly_chart(fig_donut, use_container_width=True)
+                           color="Region", color_discrete_map=REGION_COLORS, hole=0.5)
+        fig_donut.update_traces(textinfo="percent+label", textposition="outside",
+                                textfont=dict(size=10))
+        fig_donut.update_layout(height=300, showlegend=False,
+                                paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
+                                margin=dict(l=20,r=20,t=10,b=10),
+                                font=dict(color="#90A4AE"))
+        st.plotly_chart(fig_donut, use_container_width=True, config={"displayModeBar": False})
+
     with col2:
-        st.subheader("Institutions per Region")
+        st.markdown('<div style="color:#4FC3F7; font-size:0.8rem; font-weight:700; letter-spacing:0.08em; margin-bottom:4px;">INSTITUTIONS PER REGION</div>', unsafe_allow_html=True)
         fig_bar = px.bar(df_regional.sort_values("AFU_Institutions"),
                          x="AFU_Institutions", y="Region",
                          color="Region", color_discrete_map=REGION_COLORS,
                          orientation="h", text="AFU_Institutions")
-        fig_bar.update_traces(textposition="outside")
-        fig_bar.update_layout(height=380, showlegend=False,
-                              xaxis_title="Number of Institutions", yaxis_title="",
-                              margin=dict(l=10,r=40,t=20,b=20))
-        st.plotly_chart(fig_bar, use_container_width=True)
+        fig_bar.update_traces(textposition="outside", textfont=dict(color="#90A4AE"))
+        fig_bar.update_layout(height=300, showlegend=False,
+                              paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
+                              xaxis=dict(title="", color="#37474F", gridcolor="#0d2137"),
+                              yaxis=dict(title="", color="#90A4AE"),
+                              font=dict(color="#90A4AE"),
+                              margin=dict(l=10,r=50,t=10,b=10))
+        st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
 
 # ══════════════════════════════════════════════════════════════════════════
 # PAGE 2 — PRINCIPLE GAP ANALYSIS
