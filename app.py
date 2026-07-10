@@ -93,32 +93,32 @@ st.markdown("""
 @st.cache_data
 def load_country_data():
     return pd.DataFrame([
-        ("United States","North America",106,4773,37.09,-95.71),
-        ("Canada","North America",11,383,56.13,-106.35),
-        ("Ireland","Europe",9,26,53.41,-8.24),
-        ("United Kingdom","Europe",2,160,55.37,-3.43),
-        ("Portugal","Europe",2,35,39.39,-8.22),
-        ("Spain","Europe",2,83,40.46,-3.74),
-        ("Croatia","Europe",1,10,45.10,15.20),
-        ("Czech Republic","Europe",1,26,49.81,15.47),
-        ("Hungary","Europe",1,22,47.16,19.50),
-        ("Israel","Europe",1,25,31.04,34.85),
-        ("Slovakia","Europe",1,20,48.66,19.69),
-        ("Slovenia","Europe",1,5,46.15,14.99),
-        ("Switzerland","Europe",1,12,46.81,8.22),
-        ("South Korea","Asia",4,401,35.90,127.76),
-        ("China","Asia",1,3167,35.86,104.19),
-        ("Philippines","Asia",1,366,12.87,121.77),
-        ("Hong Kong SAR","Asia",1,10,22.39,114.10),
-        ("Australia","Oceania",2,43,-25.27,133.77),
-        ("Brazil","South America",3,1264,-14.23,-51.92),
-        ("Chile","South America",2,60,-35.67,-71.54),
-    ], columns=["Country","Region","AFU_Members","Total_Universities","Latitude","Longitude"])
+        ("United States","North America",109,37.09,-95.71),
+        ("Canada","North America",12,56.13,-106.35),
+        ("Ireland","Europe",9,53.41,-8.24),
+        ("United Kingdom","Europe",2,55.37,-3.43),
+        ("Portugal","Europe",2,39.39,-8.22),
+        ("Spain","Europe",2,40.46,-3.74),
+        ("Croatia","Europe",1,45.10,15.20),
+        ("Czech Republic","Europe",1,49.81,15.47),
+        ("Hungary","Europe",1,47.16,19.50),
+        ("Israel","Europe",1,31.04,34.85),
+        ("Slovakia","Europe",1,48.66,19.69),
+        ("Slovenia","Europe",1,46.15,14.99),
+        ("Switzerland","Europe",1,46.81,8.22),
+        ("South Korea","Asia",4,35.90,127.76),
+        ("China","Asia",1,35.86,104.19),
+        ("Philippines","Asia",1,12.87,121.77),
+        ("Hong Kong SAR","Asia",1,22.39,114.10),
+        ("Australia","Oceania",2,-25.27,133.77),
+        ("Brazil","South America",3,-14.23,-51.92),
+        ("Chile","South America",2,-35.67,-71.54),
+    ], columns=["Country","Region","AFU_Members","Latitude","Longitude"])
 
 @st.cache_data
 def load_regional_data():
     return pd.DataFrame([
-        ("North America",2,23,117),
+        ("North America",2,23,121),
         ("Europe",13,44,22),
         ("Asia",4,48,7),
         ("Oceania",1,14,2),
@@ -151,7 +151,7 @@ def load_best_practices():
 # Institution list by country
 INSTITUTIONS = {
     "United States": ["University of Minnesota","University of Massachusetts Boston","Arizona State University","Duke University","Rochester Institute of Technology","University of North Carolina Wilmington","University of Michigan","Middle Tennessee State University","University of South Florida","University of New Hampshire","University of Arizona","California State University San Bernardino","California State University Fullerton","California State University Long Beach","Dominican University of California","Fielding Graduate University","Los Angeles Pierce College","Palo Alto University","San Diego State University","Santa Monica College","UCLA","UC Berkeley","University of San Francisco","University of Southern California","University of the Pacific","Colorado State University","University of Colorado Denver","University of Colorado Anschutz","University of Colorado Colorado Springs","Central Connecticut State University","Goodwin University","Quinnipiac University","University of Bridgeport","University of Connecticut","University of Hartford","Florida Atlantic University","Florida State University","Eckerd College","St. Thomas University","Georgia State University","University of North Georgia","University of Hawaii at Manoa","Northeastern Illinois University","University of Illinois Urbana-Champaign","Concordia University Chicago","Purdue University","University of Indianapolis","Wichita State University","Frontier Nursing University","Northern Kentucky University","Western Kentucky University","Franciscan Missionaries of Our Lady University","University of Maine","University of New England","Towson University","University of Maryland Baltimore","University of Maryland Baltimore County","Lasell University","UMass Amherst","UMass Dartmouth","UMass Lowell","UMass Medical School","Springfield College","William James College","Eastern Michigan University","Michigan State University","Wayne State University","University of Minnesota Duluth","University of St Thomas","St Catherine University","St Cloud State University","Mississippi State University","University of Mississippi","Missouri State University","Washington University in St Louis","University of Montana","University of Nebraska at Omaha","Fairleigh Dickinson University","Stockton University","Hofstra University","Hunter College CUNY","Ithaca College","Purchase College SUNY","Cleveland State University","Miami University","University of Akron","University of Cincinnati","University of Central Oklahoma","Portland State University","Southern Oregon University","Western Oregon University","Drexel University","Pennsylvania State University","University of Rhode Island","East Tennessee State University","Tennessee State University","University of Texas at Austin","University of Utah","University of Vermont","Virginia Commonwealth University","Shepherd University","West Virginia University","University of Wisconsin La Crosse","University of Wisconsin Green Bay","University of Wisconsin Superior"],
-    "Canada": ["University of Calgary","Kwantlen Polytechnic University","UBC Okanagan","University of the Fraser Valley","Niagara College","McMaster University","Toronto Metropolitan University","Trent University","Ontario Tech University","University of Windsor","University of Manitoba"],
+    "Canada": ["University of Calgary","Kwantlen Polytechnic University","University of British Columbia","UBC Okanagan","University of the Fraser Valley","Niagara College","McMaster University","Toronto Metropolitan University","Trent University","Ontario Tech University (UOIT)","University of Windsor","University of Manitoba"],
     "Ireland": ["Atlantic Technological University","Dublin City University","Mary Immaculate College","Munster Technological University","National College of Ireland","Royal College of Surgeons Ireland","Trinity College Dublin","University College Dublin","University of Limerick"],
     "United Kingdom": ["University of Strathclyde","Ulster University"],
     "Portugal": ["ISEG — Lisbon School of Economics","Escola Superior de Saude de Santa Maria"],
@@ -208,7 +208,6 @@ with st.sidebar:
     st.caption("Paper: *Implementation Gap Analysis of the AFU Global Network*\nGenerations at Work, DCU, Oct 2026")
 
 df_country = load_country_data()
-df_country["Penetration_Pct"] = (df_country["AFU_Members"] / df_country["Total_Universities"] * 100).round(2)
 df_regional = load_regional_data()
 df_regional["Countries_Missing"] = df_regional["Total_Countries"] - df_regional["Countries_in_AFU"]
 df_regional["Country_Coverage_Pct"] = (df_regional["Countries_in_AFU"] / df_regional["Total_Countries"] * 100).round(1)
@@ -236,7 +235,7 @@ if page == "🌍 Global Overview":
     <div style="display:flex; gap:8px; margin:6px 0; flex-wrap:nowrap;">
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px;
                     padding:8px 16px; flex:1; text-align:center; border-top:2px solid #4FC3F7;">
-            <div style="color:#4FC3F7; font-size:1.5rem; font-weight:800;">156</div>
+            <div style="color:#4FC3F7; font-size:1.5rem; font-weight:800;">157</div>
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">Member Institutions</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px;
@@ -272,8 +271,8 @@ if page == "🌍 Global Overview":
         st.session_state.ov_region = "Global View"
 
     region_tabs = {
-        "Global View": (156, "#4FC3F7"),
-        "North America": (117, "#E63946"),
+        "Global View": (157, "#4FC3F7"),
+        "North America": (121, "#E63946"),
         "Europe": (22, "#2196F3"),
         "Asia": (7, "#FF9800"),
         "South America": (5, "#00BCD4"),
@@ -315,8 +314,8 @@ if page == "🌍 Global Overview":
             text=rdf["AFU_Members"].astype(str),
             textfont=dict(size=7, color="white", family="Arial Black"),
             textposition="middle center",
-            customdata=rdf[["Country","AFU_Members","Penetration_Pct","Total_Universities"]].values,
-            hovertemplate="<b>%{customdata[0]}</b><br>AFU Members: %{customdata[1]}<br>Penetration: %{customdata[2]}%<br>Total Universities: %{customdata[3]}<extra></extra>",
+            customdata=rdf[["Country","AFU_Members"]].values,
+            hovertemplate="<b>%{customdata[0]}</b><br>AFU Members: %{customdata[1]}<extra></extra>",
         ))
 
     fig_ov.update_layout(
@@ -467,28 +466,6 @@ elif page == "🗺️ Regional Equity":
         df_display = df_regional[["Region","Countries_in_AFU","Total_Countries","Countries_Missing","Country_Coverage_Pct"]].copy()
         df_display.columns = ["Region","In AFU GN","Total Countries","Not Represented","Coverage %"]
         st.dataframe(df_display, use_container_width=True, hide_index=True)
-
-    with tab2:
-        st.subheader("AFU Adoption as % of National University System")
-        fig_pen = px.bar(df_country.sort_values("Penetration_Pct", ascending=False),
-                         x="Country", y="Penetration_Pct", color="Region",
-                         color_discrete_map=REGION_COLORS,
-                         text=df_country.sort_values("Penetration_Pct", ascending=False)["Penetration_Pct"].apply(lambda x: f"{x}%"),
-                         hover_data={"AFU_Members": True, "Total_Universities": True})
-        fig_pen.update_traces(textposition="outside", textfont_size=10)
-        fig_pen.update_layout(height=500, xaxis_tickangle=-45,
-                              yaxis_title="Penetration Rate (%)", xaxis_title="",
-                              margin=dict(l=10,r=10,t=20,b=140))
-        st.plotly_chart(fig_pen, use_container_width=True)
-        st.info("💡 **Ireland (34.6%)** highest penetration. **China (0.03%)** lowest.")
-        st.subheader("AFU Members vs. National University System Size")
-        fig_sc = px.scatter(df_country, x="Total_Universities", y="AFU_Members",
-                            color="Region", size="Penetration_Pct", hover_name="Country",
-                            color_discrete_map=REGION_COLORS, log_x=True, size_max=30,
-                            labels={"Total_Universities":"Total Universities (log scale)",
-                                    "AFU_Members":"AFU Member Institutions"})
-        fig_sc.update_layout(height=420, margin=dict(l=10,r=10,t=20,b=20))
-        st.plotly_chart(fig_sc, use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════════════
 # PAGE 4 — BEST PRACTICES EXPLORER
@@ -650,8 +627,8 @@ elif page == "🌐 Impact Map":
                     line=dict(width=1.5, color="white"),
                 ),
                 text=rdf["Country"],
-                customdata=rdf[["AFU_Members","Penetration_Pct","Total_Universities"]].values,
-                hovertemplate="<b>%{text}</b><br>AFU Members: %{customdata[0]}<br>Penetration: %{customdata[1]}%<br>Total Universities: %{customdata[2]}<extra></extra>",
+                customdata=rdf[["AFU_Members"]].values,
+                hovertemplate="<b>%{text}</b><br>AFU Members: %{customdata[0]}<extra></extra>",
             ))
 
         fig_impact.update_layout(
@@ -694,9 +671,7 @@ elif page == "🌐 Impact Map":
             with col_a:
                 st.markdown(f'<div class="stat-card"><div class="stat-number">{int(cdata["AFU_Members"])}</div><div class="stat-label">AFU Members</div></div>', unsafe_allow_html=True)
             with col_b:
-                st.markdown(f'<div class="stat-card"><div class="stat-number">{cdata["Penetration_Pct"]}%</div><div class="stat-label">Penetration</div></div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="stat-card"><div class="stat-number">{int(cdata["Total_Universities"])}</div><div class="stat-label">Total Universities</div></div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="stat-card"><div class="stat-number" style="font-size:1.1rem;">{cdata["Region"]}</div><div class="stat-label">Region</div></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="stat-card"><div class="stat-number" style="font-size:1.1rem;">{cdata["Region"]}</div><div class="stat-label">Region</div></div>', unsafe_allow_html=True)
             st.markdown("---")
             st.markdown(f'<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; letter-spacing:0.1em;">INSTITUTIONS ({len(institutions)})</div>', unsafe_allow_html=True)
             for inst in institutions:
@@ -710,7 +685,6 @@ elif page == "🌐 Impact Map":
             countries_in = int(rdata["Countries_in_AFU"].values[0]) if len(rdata) > 0 else 0
             total_countries = int(rdata["Total_Countries"].values[0]) if len(rdata) > 0 else 0
             coverage = round(countries_in/total_countries*100, 1) if total_countries > 0 else 0
-            total_pen = rcountries["Penetration_Pct"].mean().round(2)
 
             st.markdown(f'<div class="overview-title">{region.upper()}</div>', unsafe_allow_html=True)
             col_a, col_b = st.columns(2)
@@ -719,7 +693,6 @@ elif page == "🌐 Impact Map":
             with col_b:
                 st.markdown(f'<div class="stat-card"><div class="stat-number">{countries_in}</div><div class="stat-label">Countries</div></div>', unsafe_allow_html=True)
             st.markdown(f'<div class="stat-card"><div class="stat-number">{coverage}%</div><div class="stat-label">Country Coverage</div></div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="stat-card"><div class="stat-number">{total_pen}%</div><div class="stat-label">Avg Penetration</div></div>', unsafe_allow_html=True)
             st.markdown("---")
             st.markdown(f'<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; margin-bottom:6px;">COUNTRIES IN NETWORK</div>', unsafe_allow_html=True)
             for _, row in rcountries.iterrows():
