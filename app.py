@@ -113,7 +113,6 @@ def load_country_data():
         ("Australia","Oceania",2,43,-25.27,133.77),
         ("Brazil","South America",3,1264,-14.23,-51.92),
         ("Chile","South America",2,60,-35.67,-71.54),
-        ("Ghana","Africa (Unofficial)",1,80,7.95,-1.02),
     ], columns=["Country","Region","AFU_Members","Total_Universities","Latitude","Longitude"])
 
 @st.cache_data
@@ -124,7 +123,6 @@ def load_regional_data():
         ("Asia",4,48,7),
         ("Oceania",1,14,2),
         ("South America",2,12,5),
-        ("Africa",1,54,1),
     ], columns=["Region","Countries_in_AFU","Total_Countries","AFU_Institutions"])
 
 @st.cache_data
@@ -172,7 +170,6 @@ INSTITUTIONS = {
     "Australia": ["University of Queensland","University of the Sunshine Coast"],
     "Brazil": ["Pontifical Catholic University of Campinas","Federal University of Technology Parana","Universidade Federal de Vicosa"],
     "Chile": ["Instituto Profesional AIEP","University of Talca"],
-    "Ghana": ["University of Ghana (Unofficial)"],
 }
 
 REGION_COLORS = {
@@ -181,8 +178,6 @@ REGION_COLORS = {
     "Asia": "#FF9800",
     "Oceania": "#9C27B0",
     "South America": "#00BCD4",
-    "Africa (Unofficial)": "#4CAF50",
-    "Africa": "#4CAF50",
 }
 GAP_COLORS = {
     "Well Implemented": "#27AE60",
@@ -229,7 +224,7 @@ if page == "🌍 Global Overview":
 
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Member Institutions", "156")
-    c2.metric("Countries Represented", "21")
+    c2.metric("Countries Represented", "20")
     c3.metric("Countries Worldwide", "195")
     c4.metric("Best Practice Submissions", "25")
     c5.metric("Submission Participation Rate", "11%")
@@ -255,7 +250,7 @@ if page == "🌍 Global Overview":
         legend=dict(orientation="h", y=-0.05, font=dict(size=12)),
     )
     st.plotly_chart(fig_map, use_container_width=True)
-    st.info("💡 **Key Finding:** North America accounts for **77% of all AFU member institutions** (117/156), with the USA alone representing **70%** (106/156). Africa has no official members despite Ghana actively submitting best practices.")
+    st.info("💡 **Key Finding:** North America accounts for **77% of all AFU member institutions** (117/156), with the USA alone representing **70%** (106/156). The network spans 5 official regions across 20 countries.")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -352,7 +347,7 @@ elif page == "🗺️ Regional Equity":
                               margin=dict(l=10,r=20,t=20,b=20),
                               legend=dict(orientation="h", y=-0.12))
         st.plotly_chart(fig_cov, use_container_width=True)
-        st.info("💡 **Africa:** 54 countries, 0 official members. **Asia:** 48 countries, only 4 represented (8.3%).")
+        st.info("💡 **Asia:** 48 countries, only 4 represented (8.3%). **Oceania:** 14 countries, only Australia represented (7.1% coverage).")
         df_display = df_regional[["Region","Countries_in_AFU","Total_Countries","Countries_Missing","Country_Coverage_Pct"]].copy()
         df_display.columns = ["Region","In AFU GN","Total Countries","Not Represented","Coverage %"]
         st.dataframe(df_display, use_container_width=True, hide_index=True)
@@ -652,18 +647,16 @@ elif page == "🌐 Impact Map":
             with col_a:
                 st.markdown('<div class="stat-card"><div class="stat-number">156</div><div class="stat-label">Institutions</div></div>', unsafe_allow_html=True)
             with col_b:
-                st.markdown('<div class="stat-card"><div class="stat-number">21</div><div class="stat-label">Countries</div></div>', unsafe_allow_html=True)
+                st.markdown('<div class="stat-card"><div class="stat-number">20</div><div class="stat-label">Countries</div></div>', unsafe_allow_html=True)
 
             st.markdown('<div class="stat-card"><div class="stat-number">5</div><div class="stat-label">Regions</div></div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-card"><div class="stat-number">11%</div><div class="stat-label">Best Practice Rate</div></div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-card"><div class="stat-number">77%</div><div class="stat-label">North America Share</div></div>', unsafe_allow_html=True)
-            st.markdown('<div class="stat-card"><div class="stat-number">0</div><div class="stat-label">Africa Members</div></div>', unsafe_allow_html=True)
 
             st.markdown("---")
             st.markdown('<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; letter-spacing:0.1em;">KEY GAPS</div>', unsafe_allow_html=True)
             st.markdown('<div style="color:#FF9800; font-size:0.78rem; padding:3px 0;">• P5: Online access — 16%</div>', unsafe_allow_html=True)
             st.markdown('<div style="color:#FF9800; font-size:0.78rem; padding:3px 0;">• P7: Longevity dividend — 16%</div>', unsafe_allow_html=True)
-            st.markdown('<div style="color:#E74C3C; font-size:0.78rem; padding:3px 0;">• Africa: 0 official members</div>', unsafe_allow_html=True)
             st.markdown('<div style="color:#E74C3C; font-size:0.78rem; padding:3px 0;">• Asia: 4 of 48 countries</div>', unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)
