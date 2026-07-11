@@ -661,26 +661,18 @@ elif page == "🌐 Impact Map":
                 st.rerun()
 
         if st.session_state.selected_region:
+            st.markdown(f'<div style="color:#00d4ff; font-size:0.8rem; font-weight:700; letter-spacing:0.1em; margin-bottom:8px;">COUNTRIES IN {st.session_state.selected_region.upper()}</div>', unsafe_allow_html=True)
             region_countries = df_country[df_country["Region"]==st.session_state.selected_region]["Country"].tolist()
-            st.markdown(f'<div style="color:#00d4ff; font-size:0.7rem; font-weight:700; margin:6px 0 2px;">COUNTRIES IN {st.session_state.selected_region.upper()}</div>', unsafe_allow_html=True)
-            # Show as compact clickable text list instead of buttons to avoid scrolling
-            country_html = ""
             for country in region_countries:
                 n = df_country[df_country["Country"]==country]["AFU_Members"].values[0]
                 is_sel = st.session_state.selected_country == country
-                bg = "#2e4a8a" if is_sel else "#1a2744"
-                prefix = "▶" if is_sel else "○"
-                country_html += f'<div style="background:{bg}; padding:3px 8px; margin:2px 0; border-radius:4px; font-size:0.72rem; color:#cce4ff;">{prefix} {country} ({n})</div>'
-            st.markdown(f'<div style="max-height:180px; overflow-y:auto;">{country_html}</div>', unsafe_allow_html=True)
-            # Selectbox for clicking
-            selected = st.selectbox("Select Country", ["—"] + region_countries,
-                                    key="country_select", label_visibility="collapsed")
-            if selected != "—":
-                if st.session_state.selected_country == selected:
-                    st.session_state.selected_country = None
-                else:
-                    st.session_state.selected_country = selected
-                st.rerun()
+                label = f"{"▶ " if is_sel else "○ "}{country} ({n})"
+                if st.button(label, key=f"cty_{country}", use_container_width=True):
+                    if st.session_state.selected_country == country:
+                        st.session_state.selected_country = None
+                    else:
+                        st.session_state.selected_country = country
+                    st.rerun()
 
     with center:
         if st.session_state.selected_country:
