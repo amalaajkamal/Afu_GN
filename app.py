@@ -704,11 +704,19 @@ elif page == "🌐 Impact Map":
         }
 
         region_iso = {
-            "North America": ["USA","CAN"],
-            "Europe": ["IRL","GBR","PRT","ESP","HRV","CZE","HUN","ISR","SVK","SVN","CHE"],
-            "Asia": ["KOR","CHN","PHL","HKG","TUR"],
-            "Oceania": ["AUS"],
-            "South America": ["BRA","CHL"],
+            "North America": ["USA","CAN","MEX","GTM","BLZ","HND","SLV","NIC","CRI","PAN",
+                              "CUB","JAM","HTI","DOM","PRI","TTO","BRB","LCA","VCT","GRD",
+                              "ATG","DMA","KNA"],
+            "Europe": ["IRL","GBR","PRT","ESP","HRV","CZE","HUN","ISR","SVK","SVN","CHE",
+                       "FRA","DEU","ITA","NLD","BEL","AUT","POL","SWE","NOR","DNK","FIN",
+                       "GRC","ROU","BGR","SRB","UKR","BLR","MDA","ALB","MKD","BIH","MNE",
+                       "LTU","LVA","EST","LUX","MLT","CYP","ISL","AND","LIE","MCO","SMR","VAT"],
+            "Asia": ["KOR","CHN","PHL","HKG","TUR","IND","JPN","IDN","MYS","THA","VNM",
+                     "MMR","KHM","LAO","SGP","BRN","TLS","BGD","LKA","NPL","BTN","MDV",
+                     "PAK","AFG","IRN","IRQ","SAU","ARE","QAT","KWT","BHR","OMN","YEM",
+                     "SYR","LBN","JOR","PSE","ARM","AZE","GEO","KAZ","UZB","TKM","KGZ","TJK","MNG"],
+            "Oceania": ["AUS","NZL","PNG","FJI","SLB","VUT","WSM","TON","KIR","FSM","PLW","MHL","NRU","TUV"],
+            "South America": ["BRA","CHL","ARG","COL","PER","VEN","ECU","BOL","PRY","URY","GUY","SUR","GUF"],
         }
 
         region_highlight_colors = {
