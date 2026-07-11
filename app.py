@@ -317,14 +317,14 @@ if page == "🌍 Global Overview":
     }
     bounds = region_bounds.get(sel, region_bounds["Global View"])
 
-    # Realistic natural colors per region
+    # Dark theme colors per region
     region_themes = {
-        "Global View":   {"land": "#2C5F2E", "ocean": "#1a6b8a", "coast": "#4a9b6f", "country": "#5a8a3c", "bg": "#0d3a4a"},
-        "North America": {"land": "#5C7A2E", "ocean": "#1565C0", "coast": "#81C784", "country": "#A5D6A7", "bg": "#0D47A1"},
-        "Europe":        {"land": "#8D7355", "ocean": "#1976D2", "coast": "#BCAAA4", "country": "#D7CCC8", "bg": "#0D47A1"},
-        "Asia":          {"land": "#6D8B3A", "ocean": "#0277BD", "coast": "#A5C785", "country": "#C8E6C9", "bg": "#01579B"},
-        "South America": {"land": "#2E7D32", "ocean": "#0288D1", "coast": "#66BB6A", "country": "#A5D6A7", "bg": "#01579B"},
-        "Oceania":       {"land": "#B5722A", "ocean": "#0288D1", "coast": "#FFCC80", "country": "#FFE0B2", "bg": "#01579B"},
+        "Global View":   {"land": "#1a1a2e", "ocean": "#050d1a", "coast": "#2a2a4a", "country": "#2a2a4a", "bg": "#050d1a"},
+        "North America": {"land": "#0f3460", "ocean": "#050d1a", "coast": "#E63946", "country": "#533483", "bg": "#050d1a"},
+        "Europe":        {"land": "#16213e", "ocean": "#050d1a", "coast": "#2196F3", "country": "#1a3a6e", "bg": "#050d1a"},
+        "Asia":          {"land": "#2d1b00", "ocean": "#050d1a", "coast": "#FF9800", "country": "#4a2e00", "bg": "#050d1a"},
+        "South America": {"land": "#001a2e", "ocean": "#050d1a", "coast": "#00BCD4", "country": "#003a4e", "bg": "#050d1a"},
+        "Oceania":       {"land": "#1a0a2e", "ocean": "#050d1a", "coast": "#9C27B0", "country": "#2e0a4e", "bg": "#050d1a"},
     }
     theme = region_themes.get(sel, region_themes["Global View"])
 
