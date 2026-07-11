@@ -293,7 +293,7 @@ if page == "🌍 Global Overview":
     for region in df_country["Region"].unique():
         rdf = map_df[map_df["Region"] == region]
         color = REGION_COLORS.get(region, "#888")
-        opacity = float(rdf["dot_opacity"].mean()) if len(rdf) > 0 else 1.0
+        opacity = float(rdf["opacity"].mean()) if len(rdf) > 0 else 1.0
 
         # Pin glow shadow
         fig_ov.add_trace(go.Scattergeo(
