@@ -469,58 +469,55 @@ elif page == "📐 Principle Gap Analysis":
     </div>
     """, unsafe_allow_html=True)
 
-    # Main layout: bar chart left, audience right
-    left_col, right_col = st.columns([1.6, 1])
+    # Principle bar chart — full width
+    st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:2px;">PRINCIPLE CITATION FREQUENCY (% of 25 submissions)</div>', unsafe_allow_html=True)
+    fig_p = px.bar(df_principles.sort_values("Pct"),
+                   x="Pct", y="Short_Label", color="Gap_Flag",
+                   color_discrete_map=GAP_COLORS, orientation="h", text="Pct",
+                   labels={"Pct": "", "Short_Label": ""})
+    fig_p.update_traces(texttemplate="%{text}%", textposition="outside",
+                        textfont=dict(size=10))
+    fig_p.add_vline(x=50, line_dash="dot", line_color="#37474F",
+                    annotation_text="50%", annotation_position="top right",
+                    annotation_font=dict(color="#546E7A", size=9))
+    fig_p.update_layout(
+        height=370,
+        paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
+        xaxis=dict(range=[0,88], color="#37474F", gridcolor="#0d2137", title=""),
+        yaxis=dict(color="#90A4AE", title="", tickfont=dict(size=9.5)),
+        legend_title="", legend=dict(orientation="h", y=-0.14,
+                                     font=dict(color="#90A4AE", size=9)),
+        margin=dict(l=5, r=50, t=5, b=30),
+        font=dict(color="#90A4AE"),
+    )
+    st.plotly_chart(fig_p, use_container_width=True, config={"displayModeBar": False})
 
-    with left_col:
-        st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:2px;">PRINCIPLE CITATION FREQUENCY (% of 25 submissions)</div>', unsafe_allow_html=True)
-        fig_p = px.bar(df_principles.sort_values("Pct"),
-                       x="Pct", y="Short_Label", color="Gap_Flag",
-                       color_discrete_map=GAP_COLORS, orientation="h", text="Pct",
-                       labels={"Pct": "", "Short_Label": ""})
-        fig_p.update_traces(texttemplate="%{text}%", textposition="outside",
-                            textfont=dict(size=10))
-        fig_p.add_vline(x=50, line_dash="dot", line_color="#37474F",
-                        annotation_text="50%", annotation_position="top right",
-                        annotation_font=dict(color="#546E7A", size=9))
-        fig_p.update_layout(
-            height=390,
+    st.markdown('<div style="color:#EF5350; font-size:0.78rem; padding:6px 10px; background:#1a0a0a; border-left:3px solid #EF5350; border-radius:0 4px 4px 0; margin:4px 0;">⚠️ P5 (Online access) and P7 (Longevity dividend) cited in only 16% of submissions — the critical implementation gap across the network.</div>', unsafe_allow_html=True)
+
+    # Audience chart — below, full width
+    st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin:8px 0 2px;">WHO DO ACTIVITIES TARGET?</div>', unsafe_allow_html=True)
+    try:
+        df_bp = load_best_practices()
+        audience_col = [c for c in df_bp.columns if "aimed at" in c.lower()][0]
+        aud_counter = Counter()
+        for val in df_bp[audience_col].dropna():
+            for a in val.split(","):
+                aud_counter[a.strip()] += 1
+        df_aud = pd.DataFrame(aud_counter.items(), columns=["Audience","Count"]).sort_values("Count", ascending=True)
+        fig_aud = px.bar(df_aud, x="Count", y="Audience", orientation="h",
+                         color="Count", color_continuous_scale="Blues", text="Count")
+        fig_aud.update_traces(textposition="outside", textfont=dict(size=10))
+        fig_aud.update_layout(
+            height=280, showlegend=False, coloraxis_showscale=False,
             paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
-            xaxis=dict(range=[0,88], color="#37474F", gridcolor="#0d2137", title=""),
-            yaxis=dict(color="#90A4AE", title="", tickfont=dict(size=9.5)),
-            legend_title="", legend=dict(orientation="h", y=-0.12,
-                                         font=dict(color="#90A4AE", size=9)),
-            margin=dict(l=5, r=50, t=5, b=30),
+            xaxis=dict(color="#37474F", gridcolor="#0d2137", title=""),
+            yaxis=dict(color="#90A4AE", title="", tickfont=dict(size=10)),
+            margin=dict(l=5, r=40, t=5, b=10),
             font=dict(color="#90A4AE"),
         )
-        st.plotly_chart(fig_p, use_container_width=True, config={"displayModeBar": False})
-
-    with right_col:
-        st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:2px;">WHO DO ACTIVITIES TARGET?</div>', unsafe_allow_html=True)
-        try:
-            df_bp = load_best_practices()
-            audience_col = [c for c in df_bp.columns if "aimed at" in c.lower()][0]
-            aud_counter = Counter()
-            for val in df_bp[audience_col].dropna():
-                for a in val.split(","):
-                    aud_counter[a.strip()] += 1
-            df_aud = pd.DataFrame(aud_counter.items(), columns=["Audience","Count"]).sort_values("Count", ascending=True)
-            fig_aud = px.bar(df_aud, x="Count", y="Audience", orientation="h",
-                             color="Count", color_continuous_scale="Blues", text="Count")
-            fig_aud.update_traces(textposition="outside", textfont=dict(size=9))
-            fig_aud.update_layout(
-                height=390, showlegend=False, coloraxis_showscale=False,
-                paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
-                xaxis=dict(color="#37474F", gridcolor="#0d2137", title=""),
-                yaxis=dict(color="#90A4AE", title="", tickfont=dict(size=9)),
-                margin=dict(l=5, r=40, t=5, b=30),
-                font=dict(color="#90A4AE"),
-            )
-            st.plotly_chart(fig_aud, use_container_width=True, config={"displayModeBar": False})
-        except Exception:
-            st.warning("Upload CSV to enable audience analysis.")
-
-    st.markdown('<div style="color:#EF5350; font-size:0.78rem; padding:6px 10px; background:#1a0a0a; border-left:3px solid #EF5350; border-radius:0 4px 4px 0; margin-top:4px;">⚠️ P5 (Online access) and P7 (Longevity dividend) cited in only 16% of submissions — the critical implementation gap across the network.</div>', unsafe_allow_html=True)
+        st.plotly_chart(fig_aud, use_container_width=True, config={"displayModeBar": False})
+    except Exception:
+        st.warning("Upload Form_Data_Entry-Grid_view.csv to the repo to enable audience analysis.")
 
 # ══════════════════════════════════════════════════════════════════════════
 # PAGE 3 — REGIONAL EQUITY
