@@ -795,6 +795,28 @@ elif page == "🌐 Impact Map":
                 st.session_state.selected_country = None
                 st.rerun()
 
+        # Countries in network — shown below map
+        if st.session_state.selected_region and not st.session_state.selected_country:
+            rcountries = df_country[df_country["Region"]==st.session_state.selected_region]
+            color = REGION_COLORS.get(st.session_state.selected_region, "#888")
+            country_items = "".join([
+                f'<div style="display:inline-block; background:#1a2744; border:1px solid {color}44; border-radius:20px; padding:4px 12px; margin:3px 4px; font-size:0.78rem; color:#cce4ff;">● {row["Country"]} <span style="color:{color}; font-weight:700;">{int(row["AFU_Members"])}</span></div>'
+                for _, row in rcountries.sort_values("AFU_Members", ascending=False).iterrows()
+            ])
+            st.markdown(f'<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; margin:8px 0 4px;">COUNTRIES IN {st.session_state.selected_region.upper()}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="display:flex; flex-wrap:wrap;">{country_items}</div>', unsafe_allow_html=True)
+
+        elif st.session_state.selected_country:
+            cdata2 = df_country[df_country["Country"]==st.session_state.selected_country].iloc[0]
+            institutions2 = INSTITUTIONS.get(st.session_state.selected_country, [])
+            color = REGION_COLORS.get(cdata2["Region"], "#888")
+            inst_items = "".join([
+                f'<div style="display:inline-block; background:#1a2744; border:1px solid {color}44; border-radius:20px; padding:3px 10px; margin:2px 3px; font-size:0.72rem; color:#cce4ff;">🎓 {inst}</div>'
+                for inst in institutions2
+            ])
+            st.markdown(f'<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; margin:8px 0 4px;">INSTITUTIONS IN {st.session_state.selected_country.upper()}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="display:flex; flex-wrap:wrap;">{inst_items}</div>', unsafe_allow_html=True)
+
     with right:
         st.markdown('<div style="background:#0d1b2a; padding:12px; border-radius:8px;">', unsafe_allow_html=True)
 
