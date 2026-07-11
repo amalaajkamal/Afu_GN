@@ -647,13 +647,10 @@ elif page == "🌐 Impact Map":
     regions = ["All Regions"] + sorted(df_country["Region"].unique().tolist())
 
     with left:
-        st.markdown('<div style="background:#0d1b2a; padding:8px; border-radius:8px; height:580px; overflow:hidden;">', unsafe_allow_html=True)
-        st.markdown('<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; margin-bottom:6px;">SELECT REGION</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; margin-bottom:4px;">SELECT REGION</div>', unsafe_allow_html=True)
 
         for region in [r for r in regions if r != "All Regions"]:
-            color = REGION_COLORS.get(region, "#888")
             count = df_regional[df_regional["Region"]==region]["AFU_Institutions"].sum() if region in df_regional["Region"].values else 0
-            is_active = st.session_state.selected_region == region
             if st.button(f"● {region}  ({count})", key=f"reg_{region}", use_container_width=True):
                 if st.session_state.selected_region == region:
                     st.session_state.selected_region = None
@@ -664,8 +661,7 @@ elif page == "🌐 Impact Map":
                 st.rerun()
 
         if st.session_state.selected_region:
-            st.markdown(f'<div style="color:#00d4ff; font-size:0.72rem; font-weight:700; letter-spacing:0.1em; margin:6px 0 4px;">COUNTRIES IN {st.session_state.selected_region.upper()}</div>', unsafe_allow_html=True)
-            st.markdown('<div style="max-height:200px; overflow-y:auto;">', unsafe_allow_html=True)
+            st.markdown(f'<div style="color:#00d4ff; font-size:0.7rem; font-weight:700; margin:6px 0 2px;">COUNTRIES IN {st.session_state.selected_region.upper()}</div>', unsafe_allow_html=True)
             region_countries = df_country[df_country["Region"]==st.session_state.selected_region]["Country"].tolist()
             for country in region_countries:
                 n = df_country[df_country["Country"]==country]["AFU_Members"].values[0]
@@ -677,9 +673,6 @@ elif page == "🌐 Impact Map":
                     else:
                         st.session_state.selected_country = country
                     st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)
 
     with center:
         if st.session_state.selected_country:
@@ -779,7 +772,7 @@ elif page == "🌐 Impact Map":
             ))
 
         fig_impact.update_layout(
-            height=440, margin=dict(l=0, r=0, t=0, b=0),
+            height=420, margin=dict(l=0, r=0, t=0, b=0),
             paper_bgcolor="#0d1b2a", plot_bgcolor="#0d1b2a",
             geo=dict(
                 showframe=False,
@@ -791,14 +784,10 @@ elif page == "🌐 Impact Map":
                 countrywidth=0.5, bgcolor="#0d1b2a",
                 projection_type="natural earth",
             ),
-            legend=dict(
-                orientation="h", y=-0.05,
-                font=dict(color="#8899bb", size=11),
-                bgcolor="rgba(0,0,0,0)",
-            ),
+            showlegend=False,
             font=dict(color="#8899bb"),
         )
-        st.plotly_chart(fig_impact, use_container_width=True)
+        st.plotly_chart(fig_impact, use_container_width=True, config={"displayModeBar": False})
 
         if st.session_state.selected_region or st.session_state.selected_country:
             if st.button("↩ Return to Global View", use_container_width=False):
