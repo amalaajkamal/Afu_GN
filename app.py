@@ -93,7 +93,7 @@ st.markdown("""
 @st.cache_data
 def load_country_data():
     return pd.DataFrame([
-        ("United States","North America",109,37.09,-95.71),
+        ("United States","North America",105,37.09,-95.71),
         ("Canada","North America",12,56.13,-106.35),
         ("Ireland","Europe",9,53.41,-8.24),
         ("United Kingdom","Europe",2,55.37,-3.43),
@@ -118,7 +118,7 @@ def load_country_data():
 @st.cache_data
 def load_regional_data():
     return pd.DataFrame([
-        ("North America",2,23,121),
+        ("North America",2,23,117),
         ("Europe",13,44,22),
         ("Asia",4,48,7),
         ("Oceania",1,14,2),
@@ -235,7 +235,7 @@ if page == "🌍 Global Overview":
     <div style="display:flex; gap:8px; margin:6px 0; flex-wrap:nowrap;">
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px;
                     padding:8px 16px; flex:1; text-align:center; border-top:2px solid #4FC3F7;">
-            <div style="color:#4FC3F7; font-size:1.5rem; font-weight:800;">157</div>
+            <div style="color:#4FC3F7; font-size:1.5rem; font-weight:800;">153</div>
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">Member Institutions</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px;
@@ -271,8 +271,8 @@ if page == "🌍 Global Overview":
         st.session_state.ov_region = "Global View"
 
     region_tabs = {
-        "Global View": (157, "#4FC3F7"),
-        "North America": (121, "#E63946"),
+        "Global View": (153, "#4FC3F7"),
+        "North America": (117, "#E63946"),
         "Europe": (22, "#2196F3"),
         "Asia": (7, "#FF9800"),
         "South America": (5, "#00BCD4"),
@@ -703,7 +703,7 @@ elif page == "🌐 Impact Map":
             st.markdown('<div class="overview-title">GLOBAL OVERVIEW</div>', unsafe_allow_html=True)
             col_a, col_b = st.columns(2)
             with col_a:
-                st.markdown('<div class="stat-card"><div class="stat-number">156</div><div class="stat-label">Institutions</div></div>', unsafe_allow_html=True)
+                st.markdown('<div class="stat-card"><div class="stat-number">153</div><div class="stat-label">Institutions</div></div>', unsafe_allow_html=True)
             with col_b:
                 st.markdown('<div class="stat-card"><div class="stat-number">20</div><div class="stat-label">Countries</div></div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-card"><div class="stat-number">5</div><div class="stat-label">Regions</div></div>', unsafe_allow_html=True)
