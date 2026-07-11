@@ -636,7 +636,7 @@ elif page == "📋 Best Practices Explorer":
 elif page == "🌐 Impact Map":
 
     st.markdown("""
-    <div style="background:#0d1b2a; padding:10px 16px; border-radius:6px; margin-bottom:12px;">
+    <div style="background:#0d1b2a; padding:6px 16px; border-radius:6px; margin-bottom:4px;">
         <span style="color:#00d4ff; font-size:1.2rem; font-weight:800;">🌐 AFU Global Network</span>
         <span style="color:#8899bb; font-size:0.9rem; margin-left:12px;">Impact Map — Select a Region, then a Country</span>
     </div>
@@ -647,8 +647,8 @@ elif page == "🌐 Impact Map":
     regions = ["All Regions"] + sorted(df_country["Region"].unique().tolist())
 
     with left:
-        st.markdown('<div style="background:#0d1b2a; padding:10px; border-radius:8px;">', unsafe_allow_html=True)
-        st.markdown('<div style="color:#00d4ff; font-size:0.8rem; font-weight:700; letter-spacing:0.1em; margin-bottom:8px;">SELECT REGION</div>', unsafe_allow_html=True)
+        st.markdown('<div style="background:#0d1b2a; padding:8px; border-radius:8px; height:580px; overflow:hidden;">', unsafe_allow_html=True)
+        st.markdown('<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; margin-bottom:6px;">SELECT REGION</div>', unsafe_allow_html=True)
 
         for region in [r for r in regions if r != "All Regions"]:
             color = REGION_COLORS.get(region, "#888")
@@ -663,10 +663,9 @@ elif page == "🌐 Impact Map":
                     st.session_state.selected_country = None
                 st.rerun()
 
-        st.markdown("---")
-
         if st.session_state.selected_region:
-            st.markdown(f'<div style="color:#00d4ff; font-size:0.8rem; font-weight:700; letter-spacing:0.1em; margin-bottom:8px;">COUNTRIES IN {st.session_state.selected_region.upper()}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="color:#00d4ff; font-size:0.72rem; font-weight:700; letter-spacing:0.1em; margin:6px 0 4px;">COUNTRIES IN {st.session_state.selected_region.upper()}</div>', unsafe_allow_html=True)
+            st.markdown('<div style="max-height:200px; overflow-y:auto;">', unsafe_allow_html=True)
             region_countries = df_country[df_country["Region"]==st.session_state.selected_region]["Country"].tolist()
             for country in region_countries:
                 n = df_country[df_country["Country"]==country]["AFU_Members"].values[0]
@@ -678,6 +677,7 @@ elif page == "🌐 Impact Map":
                     else:
                         st.session_state.selected_country = country
                     st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -779,7 +779,7 @@ elif page == "🌐 Impact Map":
             ))
 
         fig_impact.update_layout(
-            height=480, margin=dict(l=0, r=0, t=0, b=0),
+            height=440, margin=dict(l=0, r=0, t=0, b=0),
             paper_bgcolor="#0d1b2a", plot_bgcolor="#0d1b2a",
             geo=dict(
                 showframe=False,
@@ -821,8 +821,10 @@ elif page == "🌐 Impact Map":
                 st.markdown(f'<div class="stat-card"><div class="stat-number" style="font-size:1.1rem;">{cdata["Region"]}</div><div class="stat-label">Region</div></div>', unsafe_allow_html=True)
             st.markdown("---")
             st.markdown(f'<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; letter-spacing:0.1em;">INSTITUTIONS ({len(institutions)})</div>', unsafe_allow_html=True)
+            st.markdown('<div style="max-height:280px; overflow-y:auto;">', unsafe_allow_html=True)
             for inst in institutions:
                 st.markdown(f'<div style="color:#cce4ff; font-size:0.72rem; padding:3px 0 3px 8px; border-left:2px solid #2196F3; margin:2px 0;">• {inst}</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
         elif st.session_state.selected_region:
             rdata = df_regional[df_regional["Region"]==st.session_state.selected_region]
