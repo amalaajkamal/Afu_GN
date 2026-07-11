@@ -293,29 +293,49 @@ if page == "🌍 Global Overview":
     for region in df_country["Region"].unique():
         rdf = map_df[map_df["Region"] == region]
         color = REGION_COLORS.get(region, "#888")
-        opacity = float(rdf["opacity"].mean()) if len(rdf) > 0 else 1.0
+        opacity = float(rdf["dot_opacity"].mean()) if len(rdf) > 0 else 1.0
 
-        # Glow ring
+        # Pin glow shadow
         fig_ov.add_trace(go.Scattergeo(
             lat=rdf["Latitude"], lon=rdf["Longitude"],
             mode="markers", showlegend=False,
-            marker=dict(size=rdf["AFU_Members"].apply(lambda x: max(10, min(55, x/2.2))),
-                        color=color, opacity=opacity*0.2, line=dict(width=0)),
+            marker=dict(
+                size=rdf["AFU_Members"].apply(lambda x: max(14, min(60, x/2.0))),
+                color=color, opacity=opacity*0.15,
+                symbol="circle", line=dict(width=0),
+            ),
             hoverinfo="skip",
         ))
 
-        # Main dot with count label
+        # Pin head — filled circle with count
         fig_ov.add_trace(go.Scattergeo(
             lat=rdf["Latitude"], lon=rdf["Longitude"],
             mode="markers+text", name=region,
-            marker=dict(size=rdf["AFU_Members"].apply(lambda x: max(8, min(45, x/2.5))),
-                        color=color, opacity=opacity,
-                        line=dict(width=1.5, color="rgba(255,255,255,0.6)")),
+            marker=dict(
+                size=rdf["AFU_Members"].apply(lambda x: max(10, min(48, x/2.2))),
+                color=color, opacity=opacity,
+                symbol="circle",
+                line=dict(width=2, color="white"),
+            ),
             text=rdf["AFU_Members"].astype(str),
-            textfont=dict(size=7, color="white", family="Arial Black"),
+            textfont=dict(size=8, color="white", family="Arial Black"),
             textposition="middle center",
             customdata=rdf[["Country","AFU_Members"]].values,
             hovertemplate="<b>%{customdata[0]}</b><br>AFU Members: %{customdata[1]}<extra></extra>",
+        ))
+
+        # Pin tail — triangle pointing down
+        fig_ov.add_trace(go.Scattergeo(
+            lat=rdf["Latitude"] - 2.2,
+            lon=rdf["Longitude"],
+            mode="markers", showlegend=False,
+            marker=dict(
+                size=rdf["AFU_Members"].apply(lambda x: max(5, min(16, x/5.5))),
+                color=color, opacity=opacity,
+                symbol="triangle-down",
+                line=dict(width=0),
+            ),
+            hoverinfo="skip",
         ))
 
     # Region zoom bounds
