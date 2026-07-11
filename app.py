@@ -725,16 +725,40 @@ elif page == "🌐 Impact Map":
         if st.session_state.selected_region and st.session_state.selected_region in region_iso:
             sel_isos = region_iso[st.session_state.selected_region]
             hi_color = region_highlight_colors.get(st.session_state.selected_region, "#FFFFFF")
+            # Animated pulsing border — two layers for glow effect
             fig_impact.add_trace(go.Choropleth(
                 locations=sel_isos,
                 z=[1]*len(sel_isos),
-                colorscale=[[0, "rgba(255,255,255,0.08)"],[1, "rgba(255,255,255,0.08)"]],
+                colorscale=[[0, "rgba(255,255,255,0.0)"],[1, "rgba(255,255,255,0.0)"]],
                 showscale=False,
-                marker=dict(line=dict(color=hi_color, width=2.5)),
+                marker=dict(line=dict(color=hi_color+"55", width=4)),
                 hoverinfo="skip",
                 showlegend=False,
                 zmin=0, zmax=1,
             ))
+            fig_impact.add_trace(go.Choropleth(
+                locations=sel_isos,
+                z=[1]*len(sel_isos),
+                colorscale=[[0, "rgba(255,255,255,0.04)"],[1, "rgba(255,255,255,0.04)"]],
+                showscale=False,
+                marker=dict(line=dict(color=hi_color, width=1.2)),
+                hoverinfo="skip",
+                showlegend=False,
+                zmin=0, zmax=1,
+            ))
+            # CSS animation injected for pulsing effect
+            st.markdown(f"""
+            <style>
+            .js-plotly-plot .choropleth path {{
+                animation: borderPulse 1.8s ease-in-out infinite;
+            }}
+            @keyframes borderPulse {{
+                0%   {{ stroke-opacity: 1.0; stroke-width: 1.2px; }}
+                50%  {{ stroke-opacity: 0.3; stroke-width: 2.5px; }}
+                100% {{ stroke-opacity: 1.0; stroke-width: 1.2px; }}
+            }}
+            </style>
+            """, unsafe_allow_html=True)
 
         for region in df_country["Region"].unique():
             rdf = map_df[map_df["Region"]==region]
