@@ -318,6 +318,17 @@ if page == "🌍 Global Overview":
             hovertemplate="<b>%{customdata[0]}</b><br>AFU Members: %{customdata[1]}<extra></extra>",
         ))
 
+    # Region zoom bounds
+    region_bounds = {
+        "Global View":    {"lat": [-55, 80],  "lon": [-170, 180], "proj": "natural earth"},
+        "North America":  {"lat": [15, 75],   "lon": [-170, -50], "proj": "natural earth"},
+        "Europe":         {"lat": [35, 72],   "lon": [-15, 45],   "proj": "natural earth"},
+        "Asia":           {"lat": [-10, 55],  "lon": [70, 150],   "proj": "natural earth"},
+        "South America":  {"lat": [-60, 15],  "lon": [-85, -30],  "proj": "natural earth"},
+        "Oceania":        {"lat": [-50, 5],   "lon": [110, 180],  "proj": "natural earth"},
+    }
+    bounds = region_bounds.get(sel, region_bounds["Global View"])
+
     fig_ov.update_layout(
         height=460, margin=dict(l=0, r=0, t=0, b=0),
         paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
@@ -328,8 +339,9 @@ if page == "🌍 Global Overview":
             showocean=True, oceancolor="#050d1a",
             showlakes=False,
             showcountries=True, countrycolor="#0d2137", countrywidth=0.4,
-            bgcolor="#050d1a", projection_type="natural earth",
-            lataxis=dict(range=[-55, 80]),
+            bgcolor="#050d1a", projection_type=bounds["proj"],
+            lataxis=dict(range=bounds["lat"]),
+            lonaxis=dict(range=bounds["lon"]),
         ),
         legend=dict(
             orientation="h", y=1.01, x=0.5, xanchor="center",
