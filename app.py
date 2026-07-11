@@ -329,17 +329,29 @@ if page == "🌍 Global Overview":
     }
     bounds = region_bounds.get(sel, region_bounds["Global View"])
 
+    # Region-specific color themes
+    region_themes = {
+        "Global View":   {"land": "#0a1628", "ocean": "#050d1a", "coast": "#0d2137", "country": "#0d2137", "bg": "#050d1a"},
+        "North America": {"land": "#1B4332", "ocean": "#023E8A", "coast": "#40916C", "country": "#52B788", "bg": "#03045E"},
+        "Europe":        {"land": "#4A1942", "ocean": "#1B0036", "coast": "#9D4EDD", "country": "#C77DFF", "bg": "#10002B"},
+        "Asia":          {"land": "#7B2D00", "ocean": "#03045E", "coast": "#F4845F", "country": "#FF6B35", "bg": "#000814"},
+        "South America": {"land": "#1A3A1A", "ocean": "#0077B6", "coast": "#52B788", "country": "#74C69D", "bg": "#023E58"},
+        "Oceania":       {"land": "#2D2327", "ocean": "#0096C7", "coast": "#F4A261", "country": "#E9C46A", "bg": "#012A4A"},
+    }
+    theme = region_themes.get(sel, region_themes["Global View"])
+
     fig_ov.update_layout(
         height=460, margin=dict(l=0, r=0, t=0, b=0),
-        paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
+        paper_bgcolor=theme["bg"], plot_bgcolor=theme["bg"],
+
         geo=dict(
             showframe=False,
-            showcoastlines=True, coastlinecolor="#0d2137",
-            showland=True, landcolor="#0a1628",
-            showocean=True, oceancolor="#050d1a",
-            showlakes=False,
-            showcountries=True, countrycolor="#0d2137", countrywidth=0.4,
-            bgcolor="#050d1a", projection_type=bounds["proj"],
+            showcoastlines=True, coastlinecolor=theme["coast"],
+            showland=True, landcolor=theme["land"],
+            showocean=True, oceancolor=theme["ocean"],
+            showlakes=True, lakecolor=theme["ocean"],
+            showcountries=True, countrycolor=theme["country"], countrywidth=0.6,
+            bgcolor=theme["bg"], projection_type=bounds["proj"],
             lataxis=dict(range=bounds["lat"]),
             lonaxis=dict(range=bounds["lon"]),
         ),
