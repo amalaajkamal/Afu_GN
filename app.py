@@ -106,7 +106,8 @@ def load_country_data():
         ("Slovakia","Europe",1,48.66,19.69),
         ("Slovenia","Europe",1,46.15,14.99),
         ("Switzerland","Europe",1,46.81,8.22),
-        ("South Korea","Asia",4,35.90,127.76),
+        ("South Korea","Asia",3,35.90,127.76),
+        ("Turkey","Asia",1,39.92,32.85),
         ("China","Asia",1,35.86,104.19),
         ("Philippines","Asia",1,12.87,121.77),
         ("Hong Kong SAR","Asia",1,22.39,114.10),
@@ -120,7 +121,7 @@ def load_regional_data():
     return pd.DataFrame([
         ("North America",2,23,117),
         ("Europe",13,44,22),
-        ("Asia",4,48,7),
+        ("Asia",5,48,7),
         ("Oceania",1,14,2),
         ("South America",2,12,5),
     ], columns=["Region","Countries_in_AFU","Total_Countries","AFU_Institutions"])
@@ -163,10 +164,11 @@ INSTITUTIONS = {
     "Slovakia": ["Comenius University Bratislava"],
     "Slovenia": ["University of Maribor"],
     "Switzerland": ["University of Zurich"],
-    "South Korea": ["Chosun University","Paichai University","Yonsei University","Kyung Hee University"],
+    "South Korea": ["Chosun University","Paichai University","Yonsei University"],
     "China": ["Open University of China (Seniors University of China)"],
     "Philippines": ["University of the Philippines"],
     "Hong Kong SAR": ["Chinese University of Hong Kong"],
+    "Turkey": ["Istanbul Nişantaşı University"],
     "Australia": ["University of Queensland","University of the Sunshine Coast"],
     "Brazil": ["Pontifical Catholic University of Campinas","Federal University of Technology Parana","Universidade Federal de Vicosa"],
     "Chile": ["Instituto Profesional AIEP","University of Talca"],
@@ -240,7 +242,7 @@ if page == "🌍 Global Overview":
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">North America Share</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:8px 16px; flex:1; text-align:center; border-top:2px solid #27AE60;">
-            <div style="color:#27AE60; font-size:1.5rem; font-weight:800;">20</div>
+            <div style="color:#27AE60; font-size:1.5rem; font-weight:800;">21</div>
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">Countries</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:8px 16px; flex:1; text-align:center; border-top:2px solid #FF9800;">
@@ -785,7 +787,7 @@ elif page == "🌐 Impact Map":
             with col_a:
                 st.markdown('<div class="stat-card"><div class="stat-number">153</div><div class="stat-label">Institutions</div></div>', unsafe_allow_html=True)
             with col_b:
-                st.markdown('<div class="stat-card"><div class="stat-number">20</div><div class="stat-label">Countries</div></div>', unsafe_allow_html=True)
+                st.markdown('<div class="stat-card"><div class="stat-number">21</div><div class="stat-label">Countries</div></div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-card"><div class="stat-number">5</div><div class="stat-label">Regions</div></div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-card"><div class="stat-number">11%</div><div class="stat-label">Best Practice Rate</div></div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-card"><div class="stat-number">77%</div><div class="stat-label">North America Share</div></div>', unsafe_allow_html=True)
