@@ -347,46 +347,84 @@ if page == "🌍 Global Overview":
         font=dict(color="#546E7A"),
     )
 
-    st.plotly_chart(fig_ov, use_container_width=True, config={"displayModeBar": False})
+    # ── Main layout: map left, charts right ───────────────────────────────
+    map_col, chart_col = st.columns([2.8, 1.2])
 
-    # Region tabs
-    tab_cols = st.columns(len(region_tabs))
-    for i, (region, (count, color)) in enumerate(region_tabs.items()):
-        with tab_cols[i]:
-            is_active = st.session_state.ov_region == region
-            if st.button(
-                f"{'🔵 ' if region=='Global View' else ''}{region}   {count}",
-                key=f"ov_tab_{region}",
-                use_container_width=True
-            ):
-                st.session_state.ov_region = region
-                st.rerun()
+    with map_col:
+        st.plotly_chart(fig_ov, use_container_width=True, config={"displayModeBar": False})
 
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown('<div style="color:#4FC3F7; font-size:0.8rem; font-weight:700; letter-spacing:0.08em; margin-bottom:4px;">REGIONAL SHARE</div>', unsafe_allow_html=True)
-        fig_donut = px.pie(df_regional, values="AFU_Institutions", names="Region",
-                           color="Region", color_discrete_map=REGION_COLORS, hole=0.5)
-        fig_donut.update_traces(textinfo="percent+label", textposition="outside", textfont=dict(size=10))
-        fig_donut.update_layout(height=300, showlegend=False,
-                                paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
-                                margin=dict(l=20,r=20,t=10,b=10), font=dict(color="#90A4AE"))
+        # Region tabs below map
+        tab_cols = st.columns(len(region_tabs))
+        for i, (region, (count, color)) in enumerate(region_tabs.items()):
+            with tab_cols[i]:
+                is_active = st.session_state.ov_region == region
+                if st.button(
+                    f"{'🔵 ' if region=='Global View' else ''}{region}   {count}",
+                    key=f"ov_tab_{region}",
+                    use_container_width=True
+                ):
+                    st.session_state.ov_region = region
+                    st.rerun()
+
+    with chart_col:
+        # Build highlighted donut — selected region full opacity, others faded
+        df_reg_highlight = df_regional.copy()
+        if sel != "Global View":
+            pull_vals = [0.1 if r == sel else 0 for r in df_reg_highlight["Region"]]
+            opacity_vals = [1.0 if r == sel else 0.25 for r in df_reg_highlight["Region"]]
+            colors = [REGION_COLORS.get(r, "#888") if r == sel 
+                      else f"rgba(100,100,100,0.25)" for r in df_reg_highlight["Region"]]
+        else:
+            pull_vals = [0] * len(df_reg_highlight)
+            opacity_vals = [1.0] * len(df_reg_highlight)
+            colors = [REGION_COLORS.get(r, "#888") for r in df_reg_highlight["Region"]]
+
+        st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:2px;">REGIONAL SHARE</div>', unsafe_allow_html=True)
+        fig_donut = go.Figure(go.Pie(
+            labels=df_reg_highlight["Region"],
+            values=df_reg_highlight["AFU_Institutions"],
+            hole=0.5,
+            pull=pull_vals,
+            marker=dict(colors=colors, line=dict(color="#050d1a", width=2)),
+            textinfo="percent+label",
+            textfont=dict(size=9, color="white"),
+            hovertemplate="<b>%{label}</b><br>Institutions: %{value}<br>Share: %{percent}<extra></extra>",
+        ))
+        fig_donut.update_layout(
+            height=220, showlegend=False,
+            paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
+            margin=dict(l=5, r=5, t=5, b=5),
+            font=dict(color="#90A4AE"),
+        )
         st.plotly_chart(fig_donut, use_container_width=True, config={"displayModeBar": False})
 
-    with col2:
-        st.markdown('<div style="color:#4FC3F7; font-size:0.8rem; font-weight:700; letter-spacing:0.08em; margin-bottom:4px;">INSTITUTIONS PER REGION</div>', unsafe_allow_html=True)
-        fig_bar = px.bar(df_regional.sort_values("AFU_Institutions"),
-                         x="AFU_Institutions", y="Region",
-                         color="Region", color_discrete_map=REGION_COLORS,
-                         orientation="h", text="AFU_Institutions")
-        fig_bar.update_traces(textposition="outside", textfont=dict(color="#90A4AE"))
-        fig_bar.update_layout(height=300, showlegend=False,
-                              paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
-                              xaxis=dict(title="", color="#37474F", gridcolor="#0d2137"),
-                              yaxis=dict(title="", color="#90A4AE"),
-                              font=dict(color="#90A4AE"),
-                              margin=dict(l=10,r=50,t=10,b=10))
+        # Build highlighted bar — selected region bright, others faded
+        st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:2px;">INSTITUTIONS PER REGION</div>', unsafe_allow_html=True)
+        df_bar = df_regional.sort_values("AFU_Institutions").copy()
+        if sel != "Global View":
+            bar_colors = [REGION_COLORS.get(r, "#888") if r == sel 
+                         else "rgba(80,80,80,0.3)" for r in df_bar["Region"]]
+        else:
+            bar_colors = [REGION_COLORS.get(r, "#888") for r in df_bar["Region"]]
+
+        fig_bar = go.Figure(go.Bar(
+            x=df_bar["AFU_Institutions"],
+            y=df_bar["Region"],
+            orientation="h",
+            marker=dict(color=bar_colors, line=dict(width=0)),
+            text=df_bar["AFU_Institutions"],
+            textposition="outside",
+            textfont=dict(color="#90A4AE", size=10),
+            hovertemplate="<b>%{y}</b><br>Institutions: %{x}<extra></extra>",
+        ))
+        fig_bar.update_layout(
+            height=230, showlegend=False,
+            paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
+            xaxis=dict(title="", color="#37474F", gridcolor="#0d2137", showgrid=True),
+            yaxis=dict(title="", color="#90A4AE"),
+            font=dict(color="#90A4AE"),
+            margin=dict(l=5, r=40, t=5, b=5),
+        )
         st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
 
 # ══════════════════════════════════════════════════════════════════════════
