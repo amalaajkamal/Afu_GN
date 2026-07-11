@@ -692,7 +692,48 @@ elif page == "🌐 Impact Map":
             map_df = df_country.copy()
             map_df["opacity"] = 1.0
 
+        # ISO codes for choropleth border highlighting
+        country_iso_map = {
+            "United States":"USA","Canada":"CAN","Ireland":"IRL",
+            "United Kingdom":"GBR","Portugal":"PRT","Spain":"ESP",
+            "Croatia":"HRV","Czech Republic":"CZE","Hungary":"HUN",
+            "Israel":"ISR","Slovakia":"SVK","Slovenia":"SVN",
+            "Switzerland":"CHE","South Korea":"KOR","China":"CHN",
+            "Philippines":"PHL","Hong Kong SAR":"HKG","Australia":"AUS",
+            "Brazil":"BRA","Chile":"CHL","Turkey":"TUR",
+        }
+
+        region_iso = {
+            "North America": ["USA","CAN"],
+            "Europe": ["IRL","GBR","PRT","ESP","HRV","CZE","HUN","ISR","SVK","SVN","CHE"],
+            "Asia": ["KOR","CHN","PHL","HKG","TUR"],
+            "Oceania": ["AUS"],
+            "South America": ["BRA","CHL"],
+        }
+
+        region_highlight_colors = {
+            "North America": "#E63946",
+            "Europe": "#2196F3",
+            "Asia": "#FF9800",
+            "Oceania": "#9C27B0",
+            "South America": "#00BCD4",
+        }
+
         fig_impact = go.Figure()
+
+        # Add choropleth border highlight for selected region
+        if st.session_state.selected_region and st.session_state.selected_region in region_iso:
+            sel_isos = region_iso[st.session_state.selected_region]
+            hi_color = region_highlight_colors.get(st.session_state.selected_region, "#FFFFFF")
+            fig_impact.add_trace(go.Choropleth(
+                locations=sel_isos,
+                z=[1]*len(sel_isos),
+                colorscale=[[0, hi_color+"33"],[1, hi_color+"33"]],
+                showscale=False,
+                marker=dict(line=dict(color=hi_color, width=2.5)),
+                hoverinfo="skip",
+                showlegend=False,
+            ))
 
         for region in df_country["Region"].unique():
             rdf = map_df[map_df["Region"]==region]
