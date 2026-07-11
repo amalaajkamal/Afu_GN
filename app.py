@@ -288,102 +288,34 @@ if page == "🌍 Global Overview":
         map_df = df_country.copy()
         map_df["opacity"] = map_df["Region"].apply(lambda x: 1.0 if x == sel else 0.12)
 
-    # ── Country ISO codes for choropleth ──────────────────────────────────
-    country_iso = {
-        "United States": "USA", "Canada": "CAN", "Ireland": "IRL",
-        "United Kingdom": "GBR", "Portugal": "PRT", "Spain": "ESP",
-        "Croatia": "HRV", "Czech Republic": "CZE", "Hungary": "HUN",
-        "Israel": "ISR", "Slovakia": "SVK", "Slovenia": "SVN",
-        "Switzerland": "CHE", "South Korea": "KOR", "China": "CHN",
-        "Philippines": "PHL", "Hong Kong SAR": "HKG", "Australia": "AUS",
-        "Brazil": "BRA", "Chile": "CHL",
-    }
-
-    # Political color palette — distinct colors per country
-    political_colors = [
-        "#E63946","#2196F3","#4CAF50","#FF9800","#9C27B0","#00BCD4",
-        "#F44336","#3F51B5","#8BC34A","#FF5722","#673AB7","#009688",
-        "#FFC107","#795548","#607D8B","#E91E63","#03A9F4","#CDDC39",
-        "#FF6B35","#6A0572"
-    ]
-
-    all_countries = list(country_iso.keys())
-    color_map = {c: political_colors[i % len(political_colors)] for i, c in enumerate(all_countries)}
-
-    # Determine which countries to show fully vs faded based on region
-    if sel == "Global View":
-        choropleth_colors = [color_map[c] for c in all_countries]
-        choropleth_opacity = [1.0] * len(all_countries)
-    else:
-        # Get countries in selected region
-        region_countries_set = set(df_country[df_country["Region"] == sel]["Country"].tolist())
-        choropleth_colors = [color_map[c] for c in all_countries]
-        choropleth_opacity = [1.0 if c in region_countries_set else 0.12 for c in all_countries]
-
     fig_ov = go.Figure()
 
-    # ── Choropleth layer — colorful political map ─────────────────────────
-    fig_ov.add_trace(go.Choropleth(
-        locations=[country_iso[c] for c in all_countries],
-        z=list(range(len(all_countries))),
-        colorscale=[[i/(len(all_countries)-1), political_colors[i % len(political_colors)]] 
-                    for i in range(len(all_countries))],
-        showscale=False,
-        marker=dict(
-            line=dict(color="white", width=0.8),
-        ),
-        hoverinfo="skip",
-        showlegend=False,
-    ))
-
-    # ── Pin markers on top ────────────────────────────────────────────────
     for region in df_country["Region"].unique():
         rdf = map_df[map_df["Region"] == region]
         color = REGION_COLORS.get(region, "#888")
-        if sel == "Global View":
-            opacity = 1.0
-        else:
-            opacity = 1.0 if region == sel else 0.15
+        opacity = float(rdf["opacity"].mean()) if len(rdf) > 0 else 1.0
 
-        # Pin glow
+        # Glow ring
         fig_ov.add_trace(go.Scattergeo(
             lat=rdf["Latitude"], lon=rdf["Longitude"],
             mode="markers", showlegend=False,
-            marker=dict(
-                size=rdf["AFU_Members"].apply(lambda x: max(14, min(60, x/2.0))),
-                color="white", opacity=opacity * 0.2,
-                symbol="circle", line=dict(width=0),
-            ),
+            marker=dict(size=rdf["AFU_Members"].apply(lambda x: max(10, min(55, x/2.2))),
+                        color=color, opacity=opacity*0.2, line=dict(width=0)),
             hoverinfo="skip",
         ))
 
-        # Pin head
+        # Main dot with count label
         fig_ov.add_trace(go.Scattergeo(
             lat=rdf["Latitude"], lon=rdf["Longitude"],
             mode="markers+text", name=region,
-            marker=dict(
-                size=rdf["AFU_Members"].apply(lambda x: max(10, min(48, x/2.2))),
-                color="#1a1a2e", opacity=opacity,
-                symbol="circle",
-                line=dict(width=2.5, color="white"),
-            ),
+            marker=dict(size=rdf["AFU_Members"].apply(lambda x: max(8, min(45, x/2.5))),
+                        color=color, opacity=opacity,
+                        line=dict(width=1.5, color="rgba(255,255,255,0.6)")),
             text=rdf["AFU_Members"].astype(str),
-            textfont=dict(size=8, color="white", family="Arial Black"),
+            textfont=dict(size=7, color="white", family="Arial Black"),
             textposition="middle center",
             customdata=rdf[["Country","AFU_Members"]].values,
             hovertemplate="<b>%{customdata[0]}</b><br>AFU Members: %{customdata[1]}<extra></extra>",
-        ))
-
-        # Pin tail
-        fig_ov.add_trace(go.Scattergeo(
-            lat=rdf["Latitude"] - 2.2, lon=rdf["Longitude"],
-            mode="markers", showlegend=False,
-            marker=dict(
-                size=rdf["AFU_Members"].apply(lambda x: max(5, min(16, x/5.5))),
-                color="#1a1a2e", opacity=opacity,
-                symbol="triangle-down", line=dict(width=0),
-            ),
-            hoverinfo="skip",
         ))
 
     # Region zoom bounds
@@ -397,14 +329,14 @@ if page == "🌍 Global Overview":
     }
     bounds = region_bounds.get(sel, region_bounds["Global View"])
 
-    # Region-specific ocean/bg themes (land color comes from choropleth)
+    # Region-specific color themes
     region_themes = {
-        "Global View":   {"ocean": "#AED6F1", "coast": "#FFFFFF", "bg": "#EAF4FB"},
-        "North America": {"ocean": "#85C1E9", "coast": "#FFFFFF", "bg": "#D6EAF8"},
-        "Europe":        {"ocean": "#A9CCE3", "coast": "#FFFFFF", "bg": "#EBF5FB"},
-        "Asia":          {"ocean": "#7FB3D3", "coast": "#FFFFFF", "bg": "#D6EAF8"},
-        "South America": {"ocean": "#85C1E9", "coast": "#FFFFFF", "bg": "#D6EAF8"},
-        "Oceania":       {"ocean": "#5DADE2", "coast": "#FFFFFF", "bg": "#D6EAF8"},
+        "Global View":   {"land": "#0a1628", "ocean": "#050d1a", "coast": "#0d2137", "country": "#0d2137", "bg": "#050d1a"},
+        "North America": {"land": "#1B4332", "ocean": "#023E8A", "coast": "#40916C", "country": "#52B788", "bg": "#03045E"},
+        "Europe":        {"land": "#4A1942", "ocean": "#1B0036", "coast": "#9D4EDD", "country": "#C77DFF", "bg": "#10002B"},
+        "Asia":          {"land": "#7B2D00", "ocean": "#03045E", "coast": "#F4845F", "country": "#FF6B35", "bg": "#000814"},
+        "South America": {"land": "#1A3A1A", "ocean": "#0077B6", "coast": "#52B788", "country": "#74C69D", "bg": "#023E58"},
+        "Oceania":       {"land": "#2D2327", "ocean": "#0096C7", "coast": "#F4A261", "country": "#E9C46A", "bg": "#012A4A"},
     }
     theme = region_themes.get(sel, region_themes["Global View"])
 
@@ -415,10 +347,10 @@ if page == "🌍 Global Overview":
         geo=dict(
             showframe=False,
             showcoastlines=True, coastlinecolor=theme["coast"],
-            showland=True, landcolor="#F0F0F0",
+            showland=True, landcolor=theme["land"],
             showocean=True, oceancolor=theme["ocean"],
             showlakes=True, lakecolor=theme["ocean"],
-            showcountries=True, countrycolor="white", countrywidth=0.8,
+            showcountries=True, countrycolor=theme["country"], countrywidth=0.6,
             bgcolor=theme["bg"], projection_type=bounds["proj"],
             lataxis=dict(range=bounds["lat"]),
             lonaxis=dict(range=bounds["lon"]),
