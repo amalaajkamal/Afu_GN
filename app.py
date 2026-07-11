@@ -791,10 +791,6 @@ elif page == "🌐 Impact Map":
             st.markdown('<div class="stat-card"><div class="stat-number">5</div><div class="stat-label">Regions</div></div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-card"><div class="stat-number">11%</div><div class="stat-label">Best Practice Rate</div></div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-card"><div class="stat-number">77%</div><div class="stat-label">North America Share</div></div>', unsafe_allow_html=True)
-            st.markdown("---")
-            st.markdown('<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; letter-spacing:0.1em;">KEY GAPS</div>', unsafe_allow_html=True)
-            st.markdown('<div style="color:#FF9800; font-size:0.78rem; padding:3px 0;">• P5: Online access — 16%</div>', unsafe_allow_html=True)
-            st.markdown('<div style="color:#FF9800; font-size:0.78rem; padding:3px 0;">• P7: Longevity dividend — 16%</div>', unsafe_allow_html=True)
-            st.markdown('<div style="color:#E74C3C; font-size:0.78rem; padding:3px 0;">• Asia: 4 of 48 countries</div>', unsafe_allow_html=True)
+
 
         st.markdown('</div>', unsafe_allow_html=True)
