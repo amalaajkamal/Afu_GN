@@ -728,11 +728,12 @@ elif page == "🌐 Impact Map":
             fig_impact.add_trace(go.Choropleth(
                 locations=sel_isos,
                 z=[1]*len(sel_isos),
-                colorscale=[[0, hi_color+"33"],[1, hi_color+"33"]],
+                colorscale=[[0, "rgba(255,255,255,0.08)"],[1, "rgba(255,255,255,0.08)"]],
                 showscale=False,
                 marker=dict(line=dict(color=hi_color, width=2.5)),
                 hoverinfo="skip",
                 showlegend=False,
+                zmin=0, zmax=1,
             ))
 
         for region in df_country["Region"].unique():
