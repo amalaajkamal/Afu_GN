@@ -686,10 +686,14 @@ elif page == "🌐 Impact Map":
     }
 
     # ── Layout: left panel + map ───────────────────────────────────────────
-    if sel_region or sel_country:
+    if sel_country:
+        left_col, map_col, right_col = st.columns([0.8, 2.5, 1])
+    elif sel_region:
         left_col, map_col = st.columns([1, 3])
+        right_col = None
     else:
         left_col = None
+        right_col = None
         map_col_full = st.container()
 
     # Build map figure
@@ -782,7 +786,7 @@ elif page == "🌐 Impact Map":
 
         with map_col:
             st.plotly_chart(fig_impact, use_container_width=True, config={"displayModeBar": False})
-            # Metrics below map
+            # Metrics below map for region view
             if sel_region and not sel_country:
                 rdata2 = df_regional[df_regional["Region"]==sel_region]
                 total_inst2 = int(rdata2["AFU_Institutions"].values[0]) if len(rdata2) > 0 else 0
@@ -823,13 +827,17 @@ elif page == "🌐 Impact Map":
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-                # Institutions list below metrics
-                st.markdown(f'<div style="color:{color3}; font-size:0.75rem; font-weight:700; margin:10px 0 6px;">INSTITUTIONS ({len(institutions3)})</div>', unsafe_allow_html=True)
-                inst_html = "".join([
-                    f'<div style="display:flex; justify-content:flex-start; align-items:center; background:#1a2744; border-left:3px solid {color3}; padding:5px 10px; margin:3px 0; border-radius:0 6px 6px 0; font-size:0.75rem; color:#cce4ff;">🎓 {inst}</div>'
-                    for inst in institutions3
-                ])
-                st.markdown(f'<div style="max-height:200px; overflow-y:auto;">{inst_html}</div>', unsafe_allow_html=True)
+
+
+        # Right column — institutions when country selected
+        if sel_country and right_col:
+            with right_col:
+                cdata4 = df_country[df_country["Country"]==sel_country].iloc[0]
+                color4 = REGION_COLORS.get(cdata4["Region"], "#4FC3F7")
+                institutions4 = INSTITUTIONS.get(sel_country, [])
+                st.markdown(f'<div style="color:{color4}; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:6px;">INSTITUTIONS ({len(institutions4)})</div>', unsafe_allow_html=True)
+                for inst in institutions4:
+                    st.markdown(f'<div style="background:#1a2744; border-left:3px solid {color4}; padding:5px 10px; margin:3px 0; border-radius:0 6px 6px 0; font-size:0.72rem; color:#cce4ff;">🎓 {inst}</div>', unsafe_allow_html=True)
 
     else:
         with map_col_full:
