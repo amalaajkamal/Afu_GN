@@ -769,14 +769,9 @@ elif page == "🌐 Impact Map":
 
             elif sel_country:
                 cdata = df_country[df_country["Country"]==sel_country].iloc[0]
-                institutions = INSTITUTIONS.get(sel_country, [])
                 color = REGION_COLORS.get(cdata["Region"], "#4FC3F7")
                 st.markdown(f'<div style="color:{color}; font-size:0.85rem; font-weight:800; margin-bottom:8px;">{sel_country.upper()}</div>', unsafe_allow_html=True)
                 st.markdown("---")
-                st.markdown(f'<div style="color:{color}; font-size:0.72rem; font-weight:700; margin-bottom:6px;">INSTITUTIONS ({len(institutions)})</div>', unsafe_allow_html=True)
-                for inst in institutions:
-                    st.markdown(f'<div style="background:#1a2744; border-left:3px solid {color}; padding:4px 8px; margin:2px 0; border-radius:0 4px 4px 0; font-size:0.7rem; color:#cce4ff;">🎓 {inst}</div>', unsafe_allow_html=True)
-                st.markdown("")
                 if st.button("↩ Back to Region", key="back_c", use_container_width=True):
                     st.session_state.selected_country = None
                     st.rerun()
@@ -814,6 +809,8 @@ elif page == "🌐 Impact Map":
             elif sel_country:
                 cdata3 = df_country[df_country["Country"]==sel_country].iloc[0]
                 color3 = REGION_COLORS.get(cdata3["Region"], "#4FC3F7")
+                institutions3 = INSTITUTIONS.get(sel_country, [])
+                # Metrics row below map
                 st.markdown(f"""
                 <div style="display:flex; gap:8px; margin-top:6px;">
                     <div style="background:#0d1b2a; border:1px solid {color3}44; border-radius:8px; padding:10px; flex:1; text-align:center;">
@@ -826,6 +823,13 @@ elif page == "🌐 Impact Map":
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+                # Institutions list below metrics
+                st.markdown(f'<div style="color:{color3}; font-size:0.75rem; font-weight:700; margin:10px 0 6px;">INSTITUTIONS ({len(institutions3)})</div>', unsafe_allow_html=True)
+                inst_html = "".join([
+                    f'<div style="display:flex; justify-content:flex-start; align-items:center; background:#1a2744; border-left:3px solid {color3}; padding:5px 10px; margin:3px 0; border-radius:0 6px 6px 0; font-size:0.75rem; color:#cce4ff;">🎓 {inst}</div>'
+                    for inst in institutions3
+                ])
+                st.markdown(f'<div style="max-height:200px; overflow-y:auto;">{inst_html}</div>', unsafe_allow_html=True)
 
     else:
         with map_col_full:
