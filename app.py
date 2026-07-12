@@ -743,14 +743,20 @@ elif page == "🌐 Impact Map":
                 total_c = int(rdata["Total_Countries"].values[0]) if len(rdata) > 0 else 0
                 coverage = round(countries_in/total_c*100,1) if total_c > 0 else 0
 
-                st.markdown(f'<div style="color:{color}; font-size:0.85rem; font-weight:800; margin-bottom:8px;">{sel_region.upper()}</div>', unsafe_allow_html=True)
-                st.metric("Institutions", total_inst)
-                st.metric("Countries in AFU", f"{countries_in}/{total_c}")
-                st.metric("Coverage", f"{coverage}%")
-                st.markdown("---")
+                # Region title
+                st.markdown(f'<div style="color:{color}; font-size:0.9rem; font-weight:800; margin-bottom:10px; letter-spacing:0.06em;">{sel_region.upper()}</div>', unsafe_allow_html=True)
+
+                # Country list — name LEFT, count RIGHT
                 st.markdown(f'<div style="color:{color}; font-size:0.72rem; font-weight:700; margin-bottom:6px;">COUNTRIES WITH AFU MEMBERS</div>', unsafe_allow_html=True)
                 for _, row in rcountries.sort_values("AFU_Members", ascending=False).iterrows():
-                    st.markdown(f'<div style="background:#1a2744; border-left:3px solid {color}; padding:5px 10px; margin:3px 0; border-radius:0 6px 6px 0; font-size:0.78rem; color:#cce4ff;">● {row["Country"]} <span style="color:{color}; font-weight:700; float:right;">{int(row["AFU_Members"])}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div style="display:flex; justify-content:space-between; align-items:center;
+                                background:#1a2744; border-left:3px solid {color};
+                                padding:6px 10px; margin:3px 0; border-radius:0 6px 6px 0;">
+                        <span style="color:#cce4ff; font-size:0.78rem;">● {row["Country"]}</span>
+                        <span style="color:{color}; font-weight:700; font-size:0.78rem;">{int(row["AFU_Members"])}</span>
+                    </div>""", unsafe_allow_html=True)
+
                 st.markdown("")
                 country_options = ["Select country..."] + rcountries.sort_values("AFU_Members", ascending=False)["Country"].tolist()
                 chosen = st.selectbox("", country_options, key="csel2", label_visibility="collapsed")
@@ -766,8 +772,6 @@ elif page == "🌐 Impact Map":
                 institutions = INSTITUTIONS.get(sel_country, [])
                 color = REGION_COLORS.get(cdata["Region"], "#4FC3F7")
                 st.markdown(f'<div style="color:{color}; font-size:0.85rem; font-weight:800; margin-bottom:8px;">{sel_country.upper()}</div>', unsafe_allow_html=True)
-                st.metric("AFU Members", int(cdata["AFU_Members"]))
-                st.metric("Region", cdata["Region"])
                 st.markdown("---")
                 st.markdown(f'<div style="color:{color}; font-size:0.72rem; font-weight:700; margin-bottom:6px;">INSTITUTIONS ({len(institutions)})</div>', unsafe_allow_html=True)
                 for inst in institutions:
@@ -783,6 +787,45 @@ elif page == "🌐 Impact Map":
 
         with map_col:
             st.plotly_chart(fig_impact, use_container_width=True, config={"displayModeBar": False})
+            # Metrics below map
+            if sel_region and not sel_country:
+                rdata2 = df_regional[df_regional["Region"]==sel_region]
+                total_inst2 = int(rdata2["AFU_Institutions"].values[0]) if len(rdata2) > 0 else 0
+                countries_in2 = int(rdata2["Countries_in_AFU"].values[0]) if len(rdata2) > 0 else 0
+                total_c2 = int(rdata2["Total_Countries"].values[0]) if len(rdata2) > 0 else 0
+                coverage2 = round(countries_in2/total_c2*100,1) if total_c2 > 0 else 0
+                color2 = REGION_COLORS.get(sel_region, "#4FC3F7")
+                st.markdown(f"""
+                <div style="display:flex; gap:8px; margin-top:6px;">
+                    <div style="background:#0d1b2a; border:1px solid {color2}44; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                        <div style="color:{color2}; font-size:1.4rem; font-weight:800;">{total_inst2}</div>
+                        <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase;">Institutions</div>
+                    </div>
+                    <div style="background:#0d1b2a; border:1px solid {color2}44; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                        <div style="color:{color2}; font-size:1.4rem; font-weight:800;">{countries_in2}/{total_c2}</div>
+                        <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase;">Countries in AFU</div>
+                    </div>
+                    <div style="background:#0d1b2a; border:1px solid {color2}44; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                        <div style="color:{color2}; font-size:1.4rem; font-weight:800;">{coverage2}%</div>
+                        <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase;">Country Coverage</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            elif sel_country:
+                cdata3 = df_country[df_country["Country"]==sel_country].iloc[0]
+                color3 = REGION_COLORS.get(cdata3["Region"], "#4FC3F7")
+                st.markdown(f"""
+                <div style="display:flex; gap:8px; margin-top:6px;">
+                    <div style="background:#0d1b2a; border:1px solid {color3}44; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                        <div style="color:{color3}; font-size:1.4rem; font-weight:800;">{int(cdata3["AFU_Members"])}</div>
+                        <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase;">AFU Members</div>
+                    </div>
+                    <div style="background:#0d1b2a; border:1px solid {color3}44; border-radius:8px; padding:10px; flex:2; text-align:center;">
+                        <div style="color:{color3}; font-size:1.1rem; font-weight:800;">{cdata3["Region"]}</div>
+                        <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase;">Region</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
 
     else:
         with map_col_full:
