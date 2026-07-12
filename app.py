@@ -662,7 +662,7 @@ elif page == "🌐 Impact Map":
                 st.session_state.selected_country = None
                 st.rerun()
 
-    # ── Map — full width ───────────────────────────────────────────────────
+    # ── Map data ───────────────────────────────────────────────────────────
     if sel_country:
         map_df = df_country.copy()
         map_df["opacity"] = map_df["Country"].apply(lambda x: 1.0 if x == sel_country else 0.2)
@@ -685,6 +685,14 @@ elif page == "🌐 Impact Map":
         "Asia":"#FF9800","Oceania":"#9C27B0","South America":"#00BCD4",
     }
 
+    # ── Layout: left panel + map ───────────────────────────────────────────
+    if sel_region or sel_country:
+        left_col, map_col = st.columns([1, 3])
+    else:
+        left_col = None
+        map_col_full = st.container()
+
+    # Build map figure
     fig_impact = go.Figure()
 
     if sel_region and sel_region in region_iso:
@@ -721,100 +729,90 @@ elif page == "🌐 Impact Map":
                  bgcolor="#0d1b2a", projection_type="natural earth"),
         font=dict(color="#8899bb"),
     )
-    st.plotly_chart(fig_impact, use_container_width=True, config={"displayModeBar": False})
 
-    # ── Details below map ─────────────────────────────────────────────────
-    if sel_region and not sel_country:
-        rdata = df_regional[df_regional["Region"]==sel_region]
-        rcountries = df_country[df_country["Region"]==sel_region]
-        total_inst = int(rdata["AFU_Institutions"].values[0]) if len(rdata) > 0 else 0
-        countries_in = int(rdata["Countries_in_AFU"].values[0]) if len(rdata) > 0 else 0
-        total_c = int(rdata["Total_Countries"].values[0]) if len(rdata) > 0 else 0
-        coverage = round(countries_in/total_c*100, 1) if total_c > 0 else 0
-        color = REGION_COLORS.get(sel_region, "#4FC3F7")
+    # ── Render layout ──────────────────────────────────────────────────────
+    if sel_region or sel_country:
+        with left_col:
+            color = REGION_COLORS.get(sel_region or df_country[df_country["Country"]==sel_country]["Region"].values[0], "#4FC3F7")
 
-        # Metric cards in a row
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Institutions", total_inst)
-        m2.metric("Countries in AFU", countries_in)
-        m3.metric("Total Countries", total_c)
-        m4.metric("Coverage", f"{coverage}%")
+            if sel_region and not sel_country:
+                rdata = df_regional[df_regional["Region"]==sel_region]
+                rcountries = df_country[df_country["Region"]==sel_region]
+                total_inst = int(rdata["AFU_Institutions"].values[0]) if len(rdata) > 0 else 0
+                countries_in = int(rdata["Countries_in_AFU"].values[0]) if len(rdata) > 0 else 0
+                total_c = int(rdata["Total_Countries"].values[0]) if len(rdata) > 0 else 0
+                coverage = round(countries_in/total_c*100,1) if total_c > 0 else 0
 
-        # Countries list as pills
-        st.markdown(f'<div style="color:{color}; font-size:0.75rem; font-weight:700; margin:8px 0 4px;">COUNTRIES WITH AFU MEMBERS</div>', unsafe_allow_html=True)
-        pills = "".join([
-            f'<span style="background:#1a2744; border:1px solid {color}55; border-radius:20px; padding:4px 12px; margin:3px; display:inline-block; font-size:0.78rem; color:#cce4ff;">● {row["Country"]} — {int(row["AFU_Members"])} members</span>'
-            for _, row in rcountries.sort_values("AFU_Members", ascending=False).iterrows()
-        ])
-        st.markdown(f'<div style="display:flex; flex-wrap:wrap;">{pills}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="color:{color}; font-size:0.85rem; font-weight:800; margin-bottom:8px;">{sel_region.upper()}</div>', unsafe_allow_html=True)
+                st.metric("Institutions", total_inst)
+                st.metric("Countries in AFU", f"{countries_in}/{total_c}")
+                st.metric("Coverage", f"{coverage}%")
+                st.markdown("---")
+                st.markdown(f'<div style="color:{color}; font-size:0.72rem; font-weight:700; margin-bottom:6px;">COUNTRIES WITH AFU MEMBERS</div>', unsafe_allow_html=True)
+                for _, row in rcountries.sort_values("AFU_Members", ascending=False).iterrows():
+                    st.markdown(f'<div style="background:#1a2744; border-left:3px solid {color}; padding:5px 10px; margin:3px 0; border-radius:0 6px 6px 0; font-size:0.78rem; color:#cce4ff;">● {row["Country"]} <span style="color:{color}; font-weight:700; float:right;">{int(row["AFU_Members"])}</span></div>', unsafe_allow_html=True)
+                st.markdown("")
+                country_options = ["Select country..."] + rcountries.sort_values("AFU_Members", ascending=False)["Country"].tolist()
+                chosen = st.selectbox("", country_options, key="csel2", label_visibility="collapsed")
+                if chosen != "Select country...":
+                    st.session_state.selected_country = chosen
+                    st.rerun()
+                if st.button("↩ Global View", key="back_r", use_container_width=True):
+                    st.session_state.selected_region = None
+                    st.rerun()
 
-        # Country selector
-        st.markdown("")
-        country_options = ["Select a country to see institutions..."] + rcountries.sort_values("AFU_Members", ascending=False)["Country"].tolist()
-        chosen = st.selectbox("", country_options, key="csel_region", label_visibility="collapsed")
-        if chosen != "Select a country to see institutions...":
-            st.session_state.selected_country = chosen
-            st.rerun()
+            elif sel_country:
+                cdata = df_country[df_country["Country"]==sel_country].iloc[0]
+                institutions = INSTITUTIONS.get(sel_country, [])
+                color = REGION_COLORS.get(cdata["Region"], "#4FC3F7")
+                st.markdown(f'<div style="color:{color}; font-size:0.85rem; font-weight:800; margin-bottom:8px;">{sel_country.upper()}</div>', unsafe_allow_html=True)
+                st.metric("AFU Members", int(cdata["AFU_Members"]))
+                st.metric("Region", cdata["Region"])
+                st.markdown("---")
+                st.markdown(f'<div style="color:{color}; font-size:0.72rem; font-weight:700; margin-bottom:6px;">INSTITUTIONS ({len(institutions)})</div>', unsafe_allow_html=True)
+                for inst in institutions:
+                    st.markdown(f'<div style="background:#1a2744; border-left:3px solid {color}; padding:4px 8px; margin:2px 0; border-radius:0 4px 4px 0; font-size:0.7rem; color:#cce4ff;">🎓 {inst}</div>', unsafe_allow_html=True)
+                st.markdown("")
+                if st.button("↩ Back to Region", key="back_c", use_container_width=True):
+                    st.session_state.selected_country = None
+                    st.rerun()
+                if st.button("↩ Global View", key="back_g2", use_container_width=True):
+                    st.session_state.selected_region = None
+                    st.session_state.selected_country = None
+                    st.rerun()
 
-        if st.button("↩ Return to Global View", key="back_region"):
-            st.session_state.selected_region = None
-            st.rerun()
-
-    elif sel_country:
-        cdata = df_country[df_country["Country"]==sel_country].iloc[0]
-        institutions = INSTITUTIONS.get(sel_country, [])
-        color = REGION_COLORS.get(cdata["Region"], "#4FC3F7")
-
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Country", sel_country)
-        m2.metric("AFU Members", int(cdata["AFU_Members"]))
-        m3.metric("Region", cdata["Region"])
-
-        st.markdown(f'<div style="color:{color}; font-size:0.75rem; font-weight:700; margin:8px 0 4px;">INSTITUTIONS ({len(institutions)})</div>', unsafe_allow_html=True)
-        inst_pills = "".join([
-            f'<span style="background:#1a2744; border:1px solid {color}55; border-radius:20px; padding:4px 12px; margin:3px; display:inline-block; font-size:0.75rem; color:#cce4ff;">🎓 {inst}</span>'
-            for inst in institutions
-        ])
-        st.markdown(f'<div style="display:flex; flex-wrap:wrap;">{inst_pills}</div>', unsafe_allow_html=True)
-
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("↩ Back to Region", key="back_country"):
-                st.session_state.selected_country = None
-                st.rerun()
-        with c2:
-            if st.button("↩ Return to Global View", key="back_global2"):
-                st.session_state.selected_region = None
-                st.session_state.selected_country = None
-                st.rerun()
+        with map_col:
+            st.plotly_chart(fig_impact, use_container_width=True, config={"displayModeBar": False})
 
     else:
-        # Global stats row below map
-        st.markdown("""
-        <div style="display:flex; gap:8px; margin-top:6px;">
-            <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
-                <div style="color:#00d4ff; font-size:1.4rem; font-weight:800;">153</div>
-                <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em;">Institutions</div>
+        with map_col_full:
+            st.plotly_chart(fig_impact, use_container_width=True, config={"displayModeBar": False})
+            # Global stats below map
+            st.markdown("""
+            <div style="display:flex; gap:8px; margin-top:6px;">
+                <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                    <div style="color:#00d4ff; font-size:1.4rem; font-weight:800;">153</div>
+                    <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase;">Institutions</div>
+                </div>
+                <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                    <div style="color:#27AE60; font-size:1.4rem; font-weight:800;">21</div>
+                    <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase;">Countries</div>
+                </div>
+                <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                    <div style="color:#FF9800; font-size:1.4rem; font-weight:800;">5</div>
+                    <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase;">Regions</div>
+                </div>
+                <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                    <div style="color:#9C27B0; font-size:1.4rem; font-weight:800;">11%</div>
+                    <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase;">Best Practice Rate</div>
+                </div>
+                <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                    <div style="color:#E63946; font-size:1.4rem; font-weight:800;">77%</div>
+                    <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase;">North America Share</div>
+                </div>
+                <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                    <div style="color:#EF5350; font-size:1.4rem; font-weight:800;">16%</div>
+                    <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase;">P5 & P7 Rate</div>
+                </div>
             </div>
-            <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
-                <div style="color:#27AE60; font-size:1.4rem; font-weight:800;">21</div>
-                <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em;">Countries</div>
-            </div>
-            <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
-                <div style="color:#FF9800; font-size:1.4rem; font-weight:800;">5</div>
-                <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em;">Regions</div>
-            </div>
-            <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
-                <div style="color:#9C27B0; font-size:1.4rem; font-weight:800;">11%</div>
-                <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em;">Best Practice Rate</div>
-            </div>
-            <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
-                <div style="color:#E63946; font-size:1.4rem; font-weight:800;">77%</div>
-                <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em;">North America Share</div>
-            </div>
-            <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
-                <div style="color:#EF5350; font-size:1.4rem; font-weight:800;">16%</div>
-                <div style="color:#8899bb; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em;">P5 & P7 Rate</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
