@@ -636,56 +636,57 @@ elif page == "📋 Best Practices Explorer":
 elif page == "🌐 Impact Map":
 
     st.markdown("""
-    <div style="background:#0d1b2a; padding:6px 16px; border-radius:6px; margin-bottom:4px;">
-        <span style="color:#00d4ff; font-size:1.2rem; font-weight:800;">🌐 AFU Global Network</span>
-        <span style="color:#8899bb; font-size:0.9rem; margin-left:12px;">Impact Map — Select a Region, then a Country</span>
+    <div style="background:#0d1b2a; padding:6px 16px; border-radius:6px; margin-bottom:8px;">
+        <span style="color:#00d4ff; font-size:1.1rem; font-weight:800;">🌐 AFU Global Network</span>
+        <span style="color:#8899bb; font-size:0.85rem; margin-left:12px;">Impact Map — Select a Region, then a Country</span>
     </div>
     """, unsafe_allow_html=True)
 
-    left, center, right = st.columns([1.2, 3.5, 1.5])
+    # ── Session state ──────────────────────────────────────────────────────
+    if "selected_region" not in st.session_state:
+        st.session_state.selected_region = None
+    if "selected_country" not in st.session_state:
+        st.session_state.selected_country = None
 
     regions = ["All Regions"] + sorted(df_country["Region"].unique().tolist())
 
-    with left:
-        st.markdown('<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; margin-bottom:4px;">SELECT REGION</div>', unsafe_allow_html=True)
-
-        for region in [r for r in regions if r != "All Regions"]:
-            count = df_regional[df_regional["Region"]==region]["AFU_Institutions"].sum() if region in df_regional["Region"].values else 0
-            if st.button(f"● {region}  ({count})", key=f"reg_{region}", use_container_width=True):
-                if st.session_state.selected_region == region:
+    # ── Region buttons — HORIZONTAL above map ─────────────────────────────
+    reg_cols = st.columns(len(regions))
+    for i, region in enumerate(regions):
+        with reg_cols[i]:
+            if region == "All Regions":
+                count = df_regional["AFU_Institutions"].sum()
+                label = f"🌐 All ({count})"
+            else:
+                count = df_regional[df_regional["Region"]==region]["AFU_Institutions"].values[0] if region in df_regional["Region"].values else 0
+                label = f"{region} ({count})"
+            is_active = st.session_state.selected_region == region or (region == "All Regions" and st.session_state.selected_region is None)
+            if st.button(label, key=f"reg2_{region}", use_container_width=True):
+                if region == "All Regions":
                     st.session_state.selected_region = None
-                    st.session_state.selected_country = None
                 else:
                     st.session_state.selected_region = region
-                    st.session_state.selected_country = None
+                st.session_state.selected_country = None
                 st.rerun()
 
-        if st.session_state.selected_region:
-            st.markdown(f'<div style="color:#00d4ff; font-size:0.8rem; font-weight:700; letter-spacing:0.1em; margin-bottom:8px;">COUNTRIES IN {st.session_state.selected_region.upper()}</div>', unsafe_allow_html=True)
-            region_countries = df_country[df_country["Region"]==st.session_state.selected_region]["Country"].tolist()
-            for country in region_countries:
-                n = df_country[df_country["Country"]==country]["AFU_Members"].values[0]
-                is_sel = st.session_state.selected_country == country
-                label = f"{"▶ " if is_sel else "○ "}{country} ({n})"
-                if st.button(label, key=f"cty_{country}", use_container_width=True):
-                    if st.session_state.selected_country == country:
-                        st.session_state.selected_country = None
-                    else:
-                        st.session_state.selected_country = country
-                    st.rerun()
+    # ── Map + right stats ─────────────────────────────────────────────────
+    sel_region = st.session_state.selected_region
+    sel_country = st.session_state.selected_country
 
-    with center:
-        if st.session_state.selected_country:
-            map_df = df_country.copy()
-            map_df["opacity"] = map_df["Country"].apply(lambda x: 1.0 if x == st.session_state.selected_country else 0.2)
-        elif st.session_state.selected_region:
-            map_df = df_country.copy()
-            map_df["opacity"] = map_df["Region"].apply(lambda x: 1.0 if x == st.session_state.selected_region else 0.2)
-        else:
-            map_df = df_country.copy()
-            map_df["opacity"] = 1.0
+    if sel_country:
+        map_df = df_country.copy()
+        map_df["opacity"] = map_df["Country"].apply(lambda x: 1.0 if x == sel_country else 0.2)
+    elif sel_region:
+        map_df = df_country.copy()
+        map_df["opacity"] = map_df["Region"].apply(lambda x: 1.0 if x == sel_region else 0.2)
+    else:
+        map_df = df_country.copy()
+        map_df["opacity"] = 1.0
 
-        # ISO codes for choropleth border highlighting
+    map_col, stats_col = st.columns([3.2, 1])
+
+    with map_col:
+        # ISO codes for choropleth border
         country_iso_map = {
             "United States":"USA","Canada":"CAN","Ireland":"IRL",
             "United Kingdom":"GBR","Portugal":"PRT","Spain":"ESP",
@@ -695,149 +696,106 @@ elif page == "🌐 Impact Map":
             "Philippines":"PHL","Hong Kong SAR":"HKG","Australia":"AUS",
             "Brazil":"BRA","Chile":"CHL","Turkey":"TUR",
         }
-
         region_iso = {
-            "North America": ["USA","CAN","MEX","GTM","BLZ","HND","SLV","NIC","CRI","PAN",
-                              "CUB","JAM","HTI","DOM","PRI","TTO","BRB","LCA","VCT","GRD",
-                              "ATG","DMA","KNA"],
-            "Europe": ["IRL","GBR","PRT","ESP","HRV","CZE","HUN","ISR","SVK","SVN","CHE",
-                       "FRA","DEU","ITA","NLD","BEL","AUT","POL","SWE","NOR","DNK","FIN",
-                       "GRC","ROU","BGR","SRB","UKR","BLR","MDA","ALB","MKD","BIH","MNE",
-                       "LTU","LVA","EST","LUX","MLT","CYP","ISL","AND","LIE","MCO","SMR","VAT"],
-            "Asia": ["KOR","CHN","PHL","HKG","TUR","IND","JPN","IDN","MYS","THA","VNM",
-                     "MMR","KHM","LAO","SGP","BRN","TLS","BGD","LKA","NPL","BTN","MDV",
-                     "PAK","AFG","IRN","IRQ","SAU","ARE","QAT","KWT","BHR","OMN","YEM",
-                     "SYR","LBN","JOR","PSE","ARM","AZE","GEO","KAZ","UZB","TKM","KGZ","TJK","MNG"],
-            "Oceania": ["AUS","NZL","PNG","FJI","SLB","VUT","WSM","TON","KIR","FSM","PLW","MHL","NRU","TUV"],
-            "South America": ["BRA","CHL","ARG","COL","PER","VEN","ECU","BOL","PRY","URY","GUY","SUR","GUF"],
+            "North America": ["USA","CAN","MEX","GTM","BLZ","HND","SLV","NIC","CRI","PAN","CUB","JAM","HTI","DOM","TTO","BRB"],
+            "Europe": ["IRL","GBR","PRT","ESP","HRV","CZE","HUN","ISR","SVK","SVN","CHE","FRA","DEU","ITA","NLD","BEL","AUT","POL","SWE","NOR","DNK","FIN","GRC","ROU","BGR","SRB","UKR","ALB","MKD","BIH","MNE","LTU","LVA","EST","LUX","MLT","CYP","ISL"],
+            "Asia": ["KOR","CHN","PHL","HKG","TUR","IND","JPN","IDN","MYS","THA","VNM","MMR","KHM","LAO","SGP","BGD","LKA","NPL","PAK","AFG","IRN","IRQ","SAU","ARE","QAT","KWT","BHR","OMN","YEM","SYR","LBN","JOR","ARM","AZE","GEO","KAZ","UZB","MNG"],
+            "Oceania": ["AUS","NZL","PNG","FJI","SLB","VUT","WSM","TON"],
+            "South America": ["BRA","CHL","ARG","COL","PER","VEN","ECU","BOL","PRY","URY","GUY","SUR"],
         }
-
         region_highlight_colors = {
-            "North America": "#E63946",
-            "Europe": "#2196F3",
-            "Asia": "#FF9800",
-            "Oceania": "#9C27B0",
-            "South America": "#00BCD4",
+            "North America": "#E63946","Europe": "#2196F3",
+            "Asia": "#FF9800","Oceania": "#9C27B0","South America": "#00BCD4",
         }
 
         fig_impact = go.Figure()
 
-        # Add choropleth border highlight for selected region
-        if st.session_state.selected_region and st.session_state.selected_region in region_iso:
-            sel_isos = region_iso[st.session_state.selected_region]
-            hi_color = region_highlight_colors.get(st.session_state.selected_region, "#FFFFFF")
-            # Border highlight with pulse animation
+        if sel_region and sel_region in region_iso:
+            sel_isos = region_iso[sel_region]
+            hi_color = region_highlight_colors.get(sel_region, "#FFFFFF")
             fig_impact.add_trace(go.Choropleth(
-                locations=sel_isos,
-                z=[1]*len(sel_isos),
-                colorscale=[[0, "rgba(255,255,255,0.04)"],[1, "rgba(255,255,255,0.04)"]],
-                showscale=False,
-                marker_line_color=hi_color,
-                marker_line_width=1.2,
-                hoverinfo="skip",
-                showlegend=False,
-                zmin=0, zmax=1,
+                locations=sel_isos, z=[1]*len(sel_isos),
+                colorscale=[[0,"rgba(255,255,255,0.04)"],[1,"rgba(255,255,255,0.04)"]],
+                showscale=False, marker_line_color=hi_color, marker_line_width=1.2,
+                hoverinfo="skip", showlegend=False, zmin=0, zmax=1,
             ))
-            # CSS pulse animation
-            st.markdown(f"""
-            <style>
-            @keyframes borderPulse {{
-                0%   {{ opacity: 1.0; }}
-                50%  {{ opacity: 0.2; }}
-                100% {{ opacity: 1.0; }}
-            }}
-            .js-plotly-plot svg .choropleth {{
-                animation: borderPulse 1.8s ease-in-out infinite;
-            }}
-            </style>
-            """, unsafe_allow_html=True)
+            st.markdown(f"""<style>
+            @keyframes borderPulse {{0%{{opacity:1.0}}50%{{opacity:0.2}}100%{{opacity:1.0}}}}
+            .js-plotly-plot svg .choropleth{{animation:borderPulse 1.8s ease-in-out infinite;}}
+            </style>""", unsafe_allow_html=True)
 
         for region in df_country["Region"].unique():
             rdf = map_df[map_df["Region"]==region]
-            opacity_val = float(rdf["opacity"].mean()) if len(rdf) > 0 else 1.0
             color = REGION_COLORS.get(region, "#888888")
-
+            opacity = float(rdf["opacity"].mean()) if len(rdf) > 0 else 1.0
             fig_impact.add_trace(go.Scattergeo(
                 lat=rdf["Latitude"], lon=rdf["Longitude"],
                 mode="markers", name=region,
-                marker=dict(
-                    size=rdf["AFU_Members"].apply(lambda x: max(8, min(40, x/2.5))),
-                    color=color,
-                    opacity=opacity_val,
-                    line=dict(width=1.5, color="white"),
-                ),
+                marker=dict(size=rdf["AFU_Members"].apply(lambda x: max(8, min(40, x/2.5))),
+                            color=color, opacity=opacity,
+                            line=dict(width=1.5, color="white")),
                 text=rdf["Country"],
                 customdata=rdf[["AFU_Members"]].values,
                 hovertemplate="<b>%{text}</b><br>AFU Members: %{customdata[0]}<extra></extra>",
             ))
 
         fig_impact.update_layout(
-            height=420, margin=dict(l=0, r=0, t=0, b=0),
+            height=430, margin=dict(l=0,r=0,t=0,b=0),
             paper_bgcolor="#0d1b2a", plot_bgcolor="#0d1b2a",
-            geo=dict(
-                showframe=False,
-                showcoastlines=True, coastlinecolor="#2e4a8a",
-                showland=True, landcolor="#1a2744",
-                showocean=True, oceancolor="#0d1b2a",
-                showlakes=True, lakecolor="#0d1b2a",
-                showcountries=True, countrycolor="#2e4a8a",
-                countrywidth=0.5, bgcolor="#0d1b2a",
-                projection_type="natural earth",
-            ),
             showlegend=False,
+            geo=dict(showframe=False, showcoastlines=True, coastlinecolor="#2e4a8a",
+                     showland=True, landcolor="#1a2744", showocean=True, oceancolor="#0d1b2a",
+                     showcountries=True, countrycolor="#2e4a8a", countrywidth=0.5,
+                     bgcolor="#0d1b2a", projection_type="natural earth"),
             font=dict(color="#8899bb"),
         )
         st.plotly_chart(fig_impact, use_container_width=True, config={"displayModeBar": False})
 
-        if st.session_state.selected_region or st.session_state.selected_country:
-            if st.button("↩ Return to Global View", use_container_width=False):
+        if sel_region or sel_country:
+            if st.button("↩ Return to Global View"):
                 st.session_state.selected_region = None
                 st.session_state.selected_country = None
                 st.rerun()
 
-
-
-    with right:
+    with stats_col:
         st.markdown('<div style="background:#0d1b2a; padding:12px; border-radius:8px;">', unsafe_allow_html=True)
-
-        if st.session_state.selected_country:
-            cdata = df_country[df_country["Country"]==st.session_state.selected_country].iloc[0]
-            institutions = INSTITUTIONS.get(st.session_state.selected_country, [])
-
-            st.markdown(f'<div class="overview-title">{st.session_state.selected_country.upper()}</div>', unsafe_allow_html=True)
-            col_a, col_b = st.columns(2)
-            with col_a:
-                st.markdown(f'<div class="stat-card"><div class="stat-number">{int(cdata["AFU_Members"])}</div><div class="stat-label">AFU Members</div></div>', unsafe_allow_html=True)
-            with col_b:
-                st.markdown(f'<div class="stat-card"><div class="stat-number" style="font-size:1.1rem;">{cdata["Region"]}</div><div class="stat-label">Region</div></div>', unsafe_allow_html=True)
+        if sel_country:
+            cdata = df_country[df_country["Country"]==sel_country].iloc[0]
+            institutions = INSTITUTIONS.get(sel_country, [])
+            st.markdown(f'<div class="overview-title">{sel_country.upper()}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-card"><div class="stat-number">{int(cdata["AFU_Members"])}</div><div class="stat-label">AFU Members</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-card"><div class="stat-number" style="font-size:0.9rem;">{cdata["Region"]}</div><div class="stat-label">Region</div></div>', unsafe_allow_html=True)
             st.markdown("---")
-            st.markdown(f'<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; letter-spacing:0.1em;">INSTITUTIONS ({len(institutions)})</div>', unsafe_allow_html=True)
-            st.markdown('<div style="max-height:280px; overflow-y:auto;">', unsafe_allow_html=True)
-            for inst in institutions:
-                st.markdown(f'<div style="color:#cce4ff; font-size:0.72rem; padding:3px 0 3px 8px; border-left:2px solid #2196F3; margin:2px 0;">• {inst}</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="color:#00d4ff; font-size:0.75rem; font-weight:700;">INSTITUTIONS ({len(institutions)})</div>', unsafe_allow_html=True)
+            inst_html = "".join([f'<div style="color:#cce4ff; font-size:0.7rem; padding:3px 0 3px 8px; border-left:2px solid #2196F3; margin:2px 0;">• {inst}</div>' for inst in institutions])
+            st.markdown(f'<div style="max-height:280px; overflow-y:auto; background:#050d1a; border-radius:4px; padding:6px;">{inst_html}</div>', unsafe_allow_html=True)
 
-        elif st.session_state.selected_region:
-            rdata = df_regional[df_regional["Region"]==st.session_state.selected_region]
-            rcountries = df_country[df_country["Region"]==st.session_state.selected_region]
-            region = st.session_state.selected_region
+        elif sel_region:
+            rdata = df_regional[df_regional["Region"]==sel_region]
+            rcountries = df_country[df_country["Region"]==sel_region]
             total_inst = int(rdata["AFU_Institutions"].values[0]) if len(rdata) > 0 else 0
             countries_in = int(rdata["Countries_in_AFU"].values[0]) if len(rdata) > 0 else 0
-            total_countries = int(rdata["Total_Countries"].values[0]) if len(rdata) > 0 else 0
-            coverage = round(countries_in/total_countries*100, 1) if total_countries > 0 else 0
-
-            st.markdown(f'<div class="overview-title">{region.upper()}</div>', unsafe_allow_html=True)
+            total_c = int(rdata["Total_Countries"].values[0]) if len(rdata) > 0 else 0
+            coverage = round(countries_in/total_c*100, 1) if total_c > 0 else 0
+            color = REGION_COLORS.get(sel_region, "#4FC3F7")
+            st.markdown(f'<div class="overview-title">{sel_region.upper()}</div>', unsafe_allow_html=True)
             col_a, col_b = st.columns(2)
             with col_a:
-                st.markdown(f'<div class="stat-card"><div class="stat-number">{total_inst}</div><div class="stat-label">Institutions</div></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="stat-card"><div class="stat-number" style="color:{color}">{total_inst}</div><div class="stat-label">Institutions</div></div>', unsafe_allow_html=True)
             with col_b:
                 st.markdown(f'<div class="stat-card"><div class="stat-number">{countries_in}</div><div class="stat-label">Countries</div></div>', unsafe_allow_html=True)
             st.markdown(f'<div class="stat-card"><div class="stat-number">{coverage}%</div><div class="stat-label">Country Coverage</div></div>', unsafe_allow_html=True)
             st.markdown("---")
-            st.markdown(f'<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; margin-bottom:6px;">COUNTRIES IN NETWORK</div>', unsafe_allow_html=True)
-            for _, row in rcountries.iterrows():
-                color = REGION_COLORS.get(region, "#888")
+            st.markdown('<div style="color:#00d4ff; font-size:0.75rem; font-weight:700; margin-bottom:6px;">COUNTRIES IN NETWORK</div>', unsafe_allow_html=True)
+            for _, row in rcountries.sort_values("AFU_Members", ascending=False).iterrows():
                 st.markdown(f'<div style="color:#cce4ff; font-size:0.78rem; padding:4px 0 4px 8px; border-left:2px solid {color}; margin:3px 0;">● {row["Country"]} — {int(row["AFU_Members"])} members</div>', unsafe_allow_html=True)
+            st.markdown("---")
+            # Country selector
+            country_options = ["Select a country..."] + rcountries["Country"].tolist()
+            chosen = st.selectbox("", country_options, key="country_sel2", label_visibility="collapsed")
+            if chosen != "Select a country...":
+                st.session_state.selected_country = chosen
+                st.rerun()
 
         else:
             st.markdown('<div class="overview-title">GLOBAL OVERVIEW</div>', unsafe_allow_html=True)
@@ -849,6 +807,31 @@ elif page == "🌐 Impact Map":
             st.markdown('<div class="stat-card"><div class="stat-number">5</div><div class="stat-label">Regions</div></div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-card"><div class="stat-number">11%</div><div class="stat-label">Best Practice Rate</div></div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-card"><div class="stat-number">77%</div><div class="stat-label">North America Share</div></div>', unsafe_allow_html=True)
-
-
         st.markdown('</div>', unsafe_allow_html=True)
+
+    # ── Global stats row — HORIZONTAL below map ────────────────────────────
+    if not sel_region and not sel_country:
+        st.markdown("""
+        <div style="display:flex; gap:8px; margin-top:8px;">
+            <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                <div style="color:#00d4ff; font-size:1.3rem; font-weight:800;">153</div>
+                <div style="color:#8899bb; font-size:0.7rem; text-transform:uppercase;">Institutions</div>
+            </div>
+            <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                <div style="color:#27AE60; font-size:1.3rem; font-weight:800;">21</div>
+                <div style="color:#8899bb; font-size:0.7rem; text-transform:uppercase;">Countries</div>
+            </div>
+            <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                <div style="color:#FF9800; font-size:1.3rem; font-weight:800;">5</div>
+                <div style="color:#8899bb; font-size:0.7rem; text-transform:uppercase;">Regions</div>
+            </div>
+            <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                <div style="color:#9C27B0; font-size:1.3rem; font-weight:800;">11%</div>
+                <div style="color:#8899bb; font-size:0.7rem; text-transform:uppercase;">Best Practice Rate</div>
+            </div>
+            <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:10px; flex:1; text-align:center;">
+                <div style="color:#E63946; font-size:1.3rem; font-weight:800;">77%</div>
+                <div style="color:#8899bb; font-size:0.7rem; text-transform:uppercase;">North America Share</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
