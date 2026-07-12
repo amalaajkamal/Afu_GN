@@ -650,25 +650,17 @@ elif page == "🌐 Impact Map":
     sel_region = st.session_state.selected_region
     sel_country = st.session_state.selected_country
 
-    # ── 3-column layout always ─────────────────────────────────────────────
-    if sel_country:
-        left_col, map_col, right_col = st.columns([1, 2.5, 1])
-    else:
-        left_col, map_col = st.columns([1, 3])
-        right_col = None
-
-    # ── LEFT PANEL — always visible ────────────────────────────────────────
-    with left_col:
-        # Always show all regions
-        st.markdown('<div style="color:#00d4ff; font-size:0.72rem; font-weight:700; letter-spacing:0.08em; margin-bottom:6px;">SELECT REGION</div>', unsafe_allow_html=True)
-        all_regions = sorted(df_country["Region"].unique().tolist())
-        for region in all_regions:
+    # ── Region buttons ABOVE map — always horizontal ───────────────────────
+    all_regions = sorted(df_country["Region"].unique().tolist())
+    reg_cols = st.columns(len(all_regions))
+    for i, region in enumerate(all_regions):
+        with reg_cols[i]:
             count = df_regional[df_regional["Region"]==region]["AFU_Institutions"].values[0] if region in df_regional["Region"].values else 0
             color = REGION_COLORS.get(region, "#888")
             is_active = sel_region == region
             if st.button(
                 f"{'▶' if is_active else '●'} {region} ({count})",
-                key=f"reg_left_{region}",
+                key=f"reg_top_{region}",
                 use_container_width=True
             ):
                 if st.session_state.selected_region == region:
@@ -679,11 +671,26 @@ elif page == "🌐 Impact Map":
                     st.session_state.selected_country = None
                 st.rerun()
 
-        # Show countries under selected region
-        if sel_region:
-            rcountries = df_country[df_country["Region"]==sel_region].sort_values("AFU_Members", ascending=False)
+    # ── Main layout ────────────────────────────────────────────────────────
+    # Left: countries (only when region selected)
+    # Center: map
+    # Right: institutions (only when country selected)
+    if sel_region and sel_country:
+        left_col, map_col, right_col = st.columns([0.8, 2.2, 1.2])
+    elif sel_region:
+        left_col, map_col = st.columns([0.8, 3.4])
+        right_col = None
+    else:
+        left_col = None
+        right_col = None
+        map_col = st.container()
+
+    # ── LEFT: countries list ───────────────────────────────────────────────
+    if sel_region and left_col:
+        with left_col:
             color = REGION_COLORS.get(sel_region, "#888")
-            st.markdown(f'<div style="color:{color}; font-size:0.7rem; font-weight:700; margin:8px 0 4px; letter-spacing:0.06em;">COUNTRIES</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="color:{color}; font-size:0.7rem; font-weight:700; letter-spacing:0.06em; margin-bottom:4px;">COUNTRIES</div>', unsafe_allow_html=True)
+            rcountries = df_country[df_country["Region"]==sel_region].sort_values("AFU_Members", ascending=False)
             for _, row in rcountries.iterrows():
                 is_sel = sel_country == row["Country"]
                 if st.button(
@@ -691,13 +698,10 @@ elif page == "🌐 Impact Map":
                     key=f"cty_left_{row['Country']}",
                     use_container_width=True
                 ):
-                    if st.session_state.selected_country == row["Country"]:
-                        st.session_state.selected_country = None
-                    else:
-                        st.session_state.selected_country = row["Country"]
+                    st.session_state.selected_country = None if is_sel else row["Country"]
                     st.rerun()
 
-    # ── Build map ──────────────────────────────────────────────────────────
+    # ── Build map figure ───────────────────────────────────────────────────
     if sel_country:
         map_df = df_country.copy()
         map_df["opacity"] = map_df["Country"].apply(lambda x: 1.0 if x == sel_country else 0.2)
@@ -721,7 +725,6 @@ elif page == "🌐 Impact Map":
     }
 
     fig_impact = go.Figure()
-
     if sel_region and sel_region in region_iso:
         sel_isos = region_iso[sel_region]
         hi_color = region_highlight_colors.get(sel_region, "#FFFFFF")
@@ -734,20 +737,20 @@ elif page == "🌐 Impact Map":
 
     for region in df_country["Region"].unique():
         rdf = map_df[map_df["Region"]==region]
-        color = REGION_COLORS.get(region, "#888888")
+        color_r = REGION_COLORS.get(region, "#888888")
         opacity = float(rdf["opacity"].mean()) if len(rdf) > 0 else 1.0
         fig_impact.add_trace(go.Scattergeo(
             lat=rdf["Latitude"], lon=rdf["Longitude"],
             mode="markers", name=region,
             marker=dict(size=rdf["AFU_Members"].apply(lambda x: max(8, min(40, x/2.5))),
-                        color=color, opacity=opacity, line=dict(width=1.5, color="white")),
+                        color=color_r, opacity=opacity, line=dict(width=1.5, color="white")),
             text=rdf["Country"],
             customdata=rdf[["AFU_Members"]].values,
             hovertemplate="<b>%{text}</b><br>AFU Members: %{customdata[0]}<extra></extra>",
         ))
 
     fig_impact.update_layout(
-        height=430, margin=dict(l=0,r=0,t=0,b=0),
+        height=400, margin=dict(l=0,r=0,t=0,b=0),
         paper_bgcolor="#0d1b2a", plot_bgcolor="#0d1b2a",
         showlegend=False,
         geo=dict(showframe=False, showcoastlines=True, coastlinecolor="#2e4a8a",
@@ -769,8 +772,7 @@ elif page == "🌐 Impact Map":
             total_c = int(rdata["Total_Countries"].values[0]) if len(rdata) > 0 else 0
             coverage = round(countries_in/total_c*100,1) if total_c > 0 else 0
             color = REGION_COLORS.get(sel_region, "#4FC3F7")
-            st.markdown(f"""
-            <div style="display:flex; gap:8px; margin-top:4px;">
+            st.markdown(f"""<div style="display:flex; gap:8px; margin-top:4px;">
                 <div style="background:#0d1b2a; border:1px solid {color}44; border-radius:8px; padding:8px; flex:1; text-align:center;">
                     <div style="color:{color}; font-size:1.3rem; font-weight:800;">{total_inst}</div>
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">Institutions</div>
@@ -783,26 +785,22 @@ elif page == "🌐 Impact Map":
                     <div style="color:{color}; font-size:1.3rem; font-weight:800;">{coverage}%</div>
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">Coverage</div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
+            </div>""", unsafe_allow_html=True)
         elif sel_country:
             cdata = df_country[df_country["Country"]==sel_country].iloc[0]
             color = REGION_COLORS.get(cdata["Region"], "#4FC3F7")
-            st.markdown(f"""
-            <div style="display:flex; gap:8px; margin-top:4px;">
+            st.markdown(f"""<div style="display:flex; gap:8px; margin-top:4px;">
                 <div style="background:#0d1b2a; border:1px solid {color}44; border-radius:8px; padding:8px; flex:1; text-align:center;">
                     <div style="color:{color}; font-size:1.3rem; font-weight:800;">{int(cdata["AFU_Members"])}</div>
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">AFU Members</div>
                 </div>
                 <div style="background:#0d1b2a; border:1px solid {color}44; border-radius:8px; padding:8px; flex:2; text-align:center;">
-                    <div style="color:{color}; font-size:1rem; font-weight:800;">{sel_country}</div>
-                    <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">{cdata["Region"]}</div>
+                    <div style="color:{color}; font-size:1rem; font-weight:800;">{sel_country} — {cdata["Region"]}</div>
+                    <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">Country / Region</div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
+            </div>""", unsafe_allow_html=True)
         else:
-            st.markdown("""
-            <div style="display:flex; gap:8px; margin-top:4px;">
+            st.markdown("""<div style="display:flex; gap:8px; margin-top:4px;">
                 <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:8px; flex:1; text-align:center;">
                     <div style="color:#00d4ff; font-size:1.3rem; font-weight:800;">153</div>
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">Institutions</div>
@@ -823,15 +821,14 @@ elif page == "🌐 Impact Map":
                     <div style="color:#9C27B0; font-size:1.3rem; font-weight:800;">11%</div>
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">Best Practice</div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
+            </div>""", unsafe_allow_html=True)
 
-    # ── RIGHT PANEL — institutions when country selected ───────────────────
+    # ── RIGHT: institutions ────────────────────────────────────────────────
     if sel_country and right_col:
         with right_col:
             cdata2 = df_country[df_country["Country"]==sel_country].iloc[0]
             color2 = REGION_COLORS.get(cdata2["Region"], "#4FC3F7")
             institutions2 = INSTITUTIONS.get(sel_country, [])
-            st.markdown(f'<div style="color:{color2}; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:6px;">INSTITUTIONS ({len(institutions2)})</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="color:{color2}; font-size:0.75rem; font-weight:700; margin-bottom:6px;">INSTITUTIONS ({len(institutions2)})</div>', unsafe_allow_html=True)
             for inst in institutions2:
                 st.markdown(f'<div style="background:#1a2744; border-left:3px solid {color2}; padding:5px 8px; margin:3px 0; border-radius:0 6px 6px 0; font-size:0.7rem; color:#cce4ff;">🎓 {inst}</div>', unsafe_allow_html=True)
