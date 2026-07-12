@@ -753,22 +753,24 @@ elif page == "🌐 Impact Map":
                 # Country list — name LEFT, count RIGHT
                 st.markdown(f'<div style="color:{color}; font-size:0.72rem; font-weight:700; margin-bottom:6px;">COUNTRIES WITH AFU MEMBERS</div>', unsafe_allow_html=True)
                 for _, row in rcountries.sort_values("AFU_Members", ascending=False).iterrows():
-                    st.markdown(f"""
-                    <div style="display:flex; justify-content:space-between; align-items:center;
-                                background:#1a2744; border-left:3px solid {color};
-                                padding:6px 10px; margin:3px 0; border-radius:0 6px 6px 0;">
-                        <span style="color:#cce4ff; font-size:0.78rem;">● {row["Country"]}</span>
-                        <span style="color:{color}; font-weight:700; font-size:0.78rem;">{int(row["AFU_Members"])}</span>
-                    </div>""", unsafe_allow_html=True)
+                    is_sel = st.session_state.selected_country == row["Country"]
+                    bg = "#2e4a8a" if is_sel else "#1a2744"
+                    prefix = "▶" if is_sel else "●"
+                    col_a, col_b = st.columns([3,1])
+                    with col_a:
+                        if st.button(f"{prefix} {row['Country']}", key=f"cty3_{row['Country']}", use_container_width=True):
+                            if st.session_state.selected_country == row["Country"]:
+                                st.session_state.selected_country = None
+                            else:
+                                st.session_state.selected_country = row["Country"]
+                            st.rerun()
+                    with col_b:
+                        st.markdown(f'<div style="color:{color}; font-weight:700; font-size:0.85rem; padding:6px 0; text-align:center;">{int(row["AFU_Members"])}</div>', unsafe_allow_html=True)
 
                 st.markdown("")
-                country_options = ["Select country..."] + rcountries.sort_values("AFU_Members", ascending=False)["Country"].tolist()
-                chosen = st.selectbox("", country_options, key="csel2", label_visibility="collapsed")
-                if chosen != "Select country...":
-                    st.session_state.selected_country = chosen
-                    st.rerun()
                 if st.button("↩ Global View", key="back_r", use_container_width=True):
                     st.session_state.selected_region = None
+                    st.session_state.selected_country = None
                     st.rerun()
 
             elif sel_country:
