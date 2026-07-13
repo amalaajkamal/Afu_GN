@@ -205,7 +205,7 @@ with st.sidebar:
     ])
     st.markdown("---")
     st.markdown("**Data Sources**")
-    st.markdown("- AFU GN Website (June 2026)\n- AFU Best Practices Database\n- UNESCO UIS 2024\n- National HEI Registries")
+    st.markdown("- AFU GN Website (June 2026)\n- AFU Best Practices Database\n- World Bank SP.POP.65UP.TO (2025)\n- UN Population Division WPP 2025")
     st.markdown("---")
     st.caption("Paper: *Implementation Gap Analysis of the AFU Global Network*\nGenerations at Work, DCU, Oct 2026")
 
@@ -583,7 +583,7 @@ elif page == "🗺️ Regional Equity":
         st.dataframe(df_display, use_container_width=True, hide_index=True, height=215)
 
     with col2:
-        st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:4px;">AFU DENSITY PER MILLION SENIORS (2025) — World Bank SP.POP.65UP.TO</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:4px;">AFU DENSITY PER MILLION SENIORS (2025)</div>', unsafe_allow_html=True)
 
         df_density = df_country[df_country["AFU_Per_Million_Seniors"] > 0].sort_values("AFU_Per_Million_Seniors", ascending=False).copy()
 
