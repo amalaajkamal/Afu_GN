@@ -525,9 +525,12 @@ elif page == "📐 Principle Gap Analysis":
 # PAGE 3 — REGIONAL EQUITY
 # ══════════════════════════════════════════════════════════════════════════
 elif page == "🗺️ Regional Equity":
-    st.title("🗺️ Geographic Equity & Population-Adjusted Analysis")
-    st.markdown("*Country coverage gaps and age-adjusted AFU density across regions*")
-    st.divider()
+    st.markdown("""
+    <div style="background:#0d1b2a; padding:6px 16px; border-radius:6px; margin-bottom:8px;">
+        <span style="color:#4FC3F7; font-size:1.1rem; font-weight:800; letter-spacing:0.06em;">🗺️ GEOGRAPHIC EQUITY & POPULATION-ADJUSTED ANALYSIS</span>
+        <span style="color:#37474F; font-size:0.78rem; margin-left:12px;">Country coverage gaps and age-adjusted AFU density</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Population 65+ data (World Bank SP.POP.65UP.TO, 2025)
     pop65_dict = {
@@ -556,10 +559,11 @@ elif page == "🗺️ Regional Equity":
     df_country["Pop_65_M"] = df_country["Country"].map(lambda x: round(pop65_dict.get(x, {}).get("pop65", 0)/1e6, 2))
     df_country["AFU_Per_Million_Seniors"] = df_country["Country"].map(lambda x: pop65_dict.get(x, {}).get("per_m", 0))
 
-    tab1, tab2 = st.tabs(["Country Coverage Gap", "AFU Density per Million Seniors"])
+    # Side by side — no scrolling
+    col1, col2 = st.columns(2)
 
-    with tab1:
-        st.subheader("Countries Represented vs. Total Countries Per Region")
+    with col1:
+        st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:4px;">COUNTRY COVERAGE GAP BY REGION</div>', unsafe_allow_html=True)
         df_melt = df_regional.melt(id_vars="Region",
                                    value_vars=["Countries_in_AFU","Countries_Missing"],
                                    var_name="Type", value_name="Count")
@@ -568,18 +572,18 @@ elif page == "🗺️ Regional Equity":
                          color_discrete_map={"In AFU GN":"#2E6DA4","Not in AFU GN":"#D5E8F5"},
                          barmode="stack", text="Count")
         fig_cov.update_traces(textposition="inside")
-        fig_cov.update_layout(height=400, xaxis_title="Number of Countries",
-                              margin=dict(l=10,r=20,t=20,b=20),
-                              legend=dict(orientation="h", y=-0.12))
-        st.plotly_chart(fig_cov, use_container_width=True)
-        st.info("💡 **Asia:** 48 countries, only 5 represented (10.4%). **Oceania:** 14 countries, only Australia represented (7.1% coverage).")
-        df_display = df_regional[["Region","Countries_in_AFU","Total_Countries","Countries_Missing","Country_Coverage_Pct"]].copy()
-        df_display.columns = ["Region","In AFU GN","Total Countries","Not Represented","Coverage %"]
-        st.dataframe(df_display, use_container_width=True, hide_index=True)
+        fig_cov.update_layout(height=320, xaxis_title="Number of Countries",
+                              margin=dict(l=10,r=20,t=10,b=20),
+                              legend=dict(orientation="h", y=-0.18))
+        st.plotly_chart(fig_cov, use_container_width=True, config={"displayModeBar": False})
 
-    with tab2:
-        st.subheader("AFU Institutions per Million People Aged 65+")
-        st.markdown("*Source: World Bank SP.POP.65UP.TO (2025), UN Population Division*")
+        # Compact table
+        df_display = df_regional[["Region","Countries_in_AFU","Total_Countries","Countries_Missing","Country_Coverage_Pct"]].copy()
+        df_display.columns = ["Region","In AFU GN","Total","Not Rep.","Coverage %"]
+        st.dataframe(df_display, use_container_width=True, hide_index=True, height=215)
+
+    with col2:
+        st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:4px;">AFU DENSITY PER MILLION SENIORS (2025) — World Bank SP.POP.65UP.TO</div>', unsafe_allow_html=True)
 
         df_density = df_country[df_country["AFU_Per_Million_Seniors"] > 0].sort_values("AFU_Per_Million_Seniors", ascending=False).copy()
 
@@ -587,25 +591,21 @@ elif page == "🗺️ Regional Equity":
             df_density,
             x="Country", y="AFU_Per_Million_Seniors",
             color="Region", color_discrete_map=REGION_COLORS,
-            text=df_density["AFU_Per_Million_Seniors"].apply(lambda x: f"{x:.3f}"),
+            text=df_density["AFU_Per_Million_Seniors"].apply(lambda x: f"{x:.2f}"),
             hover_data={"AFU_Members": True, "Pop_65_M": True},
-            labels={"AFU_Per_Million_Seniors": "AFU per Million Seniors", "Pop_65_M": "Pop 65+ (M)"}
         )
-        fig_den.update_traces(textposition="outside", textfont_size=9)
+        fig_den.update_traces(textposition="outside", textfont_size=7)
         fig_den.update_layout(
-            height=480, xaxis_tickangle=-45,
-            yaxis_title="AFU Institutions per Million Seniors",
+            height=320,
+            xaxis_tickangle=-45,
+            yaxis_title="AFU per Million Seniors",
             xaxis_title="",
-            margin=dict(l=10,r=10,t=20,b=160),
+            margin=dict(l=10,r=10,t=10,b=100),
+            legend=dict(orientation="h", y=-0.35, font=dict(size=9)),
         )
-        st.plotly_chart(fig_den, use_container_width=True)
+        st.plotly_chart(fig_den, use_container_width=True, config={"displayModeBar": False})
 
-        st.info("💡 **Ireland (10.13)** leads due to DCU founder effect. **China (0.005)** — with 209.74M seniors — is the most underserved: a **2,000-fold gap** vs Ireland.")
-
-        # Summary table
-        df_table = df_density[["Country","Region","AFU_Members","Pop_65_M","AFU_Per_Million_Seniors"]].copy()
-        df_table.columns = ["Country","Region","AFU Members","Pop 65+ (M)","AFU per Million Seniors"]
-        st.dataframe(df_table, use_container_width=True, hide_index=True)
+        st.markdown('<div style="background:#0a1628; border-left:3px solid #EF5350; padding:8px 12px; border-radius:0 6px 6px 0; font-size:0.78rem; color:#cce4ff;">💡 <b>Ireland (10.13)</b> leads due to DCU founder effect. <b>China (0.005)</b> — 209.74M seniors — is most underserved: a <b>2,000-fold gap</b>.</div>', unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════
 # PAGE 4 — BEST PRACTICES EXPLORER
