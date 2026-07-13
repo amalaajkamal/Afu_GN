@@ -525,11 +525,39 @@ elif page == "📐 Principle Gap Analysis":
 # PAGE 3 — REGIONAL EQUITY
 # ══════════════════════════════════════════════════════════════════════════
 elif page == "🗺️ Regional Equity":
-    st.title("🗺️ Geographic Equity & Penetration Analysis")
-    st.markdown("*Country coverage gaps and institutional adoption rates across AFU regions*")
+    st.title("🗺️ Geographic Equity & Population-Adjusted Analysis")
+    st.markdown("*Country coverage gaps and age-adjusted AFU density across regions*")
     st.divider()
 
-    tab1, tab2 = st.tabs(["Country Coverage Gap", "Penetration Rate by Country"])
+    # Population 65+ data (World Bank SP.POP.65UP.TO, 2025)
+    pop65_dict = {
+        "United States": {"pop65": 62844750, "per_m": 1.671},
+        "Canada": {"pop65": 8438778, "per_m": 1.422},
+        "Ireland": {"pop65": 888912, "per_m": 10.125},
+        "United Kingdom": {"pop65": 13690810, "per_m": 0.146},
+        "Portugal": {"pop65": 2695018, "per_m": 0.742},
+        "Spain": {"pop65": 10681480, "per_m": 0.187},
+        "Croatia": {"pop65": 915154, "per_m": 1.093},
+        "Czech Republic": {"pop65": 2305849, "per_m": 0.434},
+        "Hungary": {"pop65": 2012974, "per_m": 0.497},
+        "Israel": {"pop65": 1284748, "per_m": 0.778},
+        "Slovakia": {"pop65": 1030590, "per_m": 0.970},
+        "Slovenia": {"pop65": 473316, "per_m": 2.113},
+        "Switzerland": {"pop65": 1857777, "per_m": 0.538},
+        "South Korea": {"pop65": 10507688, "per_m": 0.286},
+        "China": {"pop65": 209741958, "per_m": 0.005},
+        "Philippines": {"pop65": 6684893, "per_m": 0.150},
+        "Hong Kong SAR": {"pop65": 1774789, "per_m": 0.563},
+        "Australia": {"pop65": 4996279, "per_m": 0.400},
+        "Brazil": {"pop65": 24431586, "per_m": 0.123},
+        "Chile": {"pop65": 2897512, "per_m": 0.690},
+        "Turkey": {"pop65": 9078171, "per_m": 0.110},
+    }
+    df_country["Pop_65_M"] = df_country["Country"].map(lambda x: round(pop65_dict.get(x, {}).get("pop65", 0)/1e6, 2))
+    df_country["AFU_Per_Million_Seniors"] = df_country["Country"].map(lambda x: pop65_dict.get(x, {}).get("per_m", 0))
+
+    tab1, tab2 = st.tabs(["Country Coverage Gap", "AFU Density per Million Seniors"])
+
     with tab1:
         st.subheader("Countries Represented vs. Total Countries Per Region")
         df_melt = df_regional.melt(id_vars="Region",
@@ -544,10 +572,40 @@ elif page == "🗺️ Regional Equity":
                               margin=dict(l=10,r=20,t=20,b=20),
                               legend=dict(orientation="h", y=-0.12))
         st.plotly_chart(fig_cov, use_container_width=True)
-        st.info("💡 **Asia:** 48 countries, only 4 represented (8.3%). **Oceania:** 14 countries, only Australia represented (7.1% coverage).")
+        st.info("💡 **Asia:** 48 countries, only 5 represented (10.4%). **Oceania:** 14 countries, only Australia represented (7.1% coverage).")
         df_display = df_regional[["Region","Countries_in_AFU","Total_Countries","Countries_Missing","Country_Coverage_Pct"]].copy()
         df_display.columns = ["Region","In AFU GN","Total Countries","Not Represented","Coverage %"]
         st.dataframe(df_display, use_container_width=True, hide_index=True)
+
+    with tab2:
+        st.subheader("AFU Institutions per Million People Aged 65+")
+        st.markdown("*Source: World Bank SP.POP.65UP.TO (2025), UN Population Division*")
+
+        df_density = df_country[df_country["AFU_Per_Million_Seniors"] > 0].sort_values("AFU_Per_Million_Seniors", ascending=False).copy()
+
+        fig_den = px.bar(
+            df_density,
+            x="Country", y="AFU_Per_Million_Seniors",
+            color="Region", color_discrete_map=REGION_COLORS,
+            text=df_density["AFU_Per_Million_Seniors"].apply(lambda x: f"{x:.3f}"),
+            hover_data={"AFU_Members": True, "Pop_65_M": True},
+            labels={"AFU_Per_Million_Seniors": "AFU per Million Seniors", "Pop_65_M": "Pop 65+ (M)"}
+        )
+        fig_den.update_traces(textposition="outside", textfont_size=9)
+        fig_den.update_layout(
+            height=480, xaxis_tickangle=-45,
+            yaxis_title="AFU Institutions per Million Seniors",
+            xaxis_title="",
+            margin=dict(l=10,r=10,t=20,b=160),
+        )
+        st.plotly_chart(fig_den, use_container_width=True)
+
+        st.info("💡 **Ireland (10.13)** leads due to DCU founder effect. **China (0.005)** — with 209.74M seniors — is the most underserved: a **2,000-fold gap** vs Ireland.")
+
+        # Summary table
+        df_table = df_density[["Country","Region","AFU_Members","Pop_65_M","AFU_Per_Million_Seniors"]].copy()
+        df_table.columns = ["Country","Region","AFU Members","Pop 65+ (M)","AFU per Million Seniors"]
+        st.dataframe(df_table, use_container_width=True, hide_index=True)
 
 # ══════════════════════════════════════════════════════════════════════════
 # PAGE 4 — BEST PRACTICES EXPLORER
