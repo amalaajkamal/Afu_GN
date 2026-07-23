@@ -244,15 +244,15 @@ if page == "🌍 Global Overview":
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">North America Share</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:8px 16px; flex:1; text-align:center; border-top:2px solid #27AE60;">
-            <div style="color:#27AE60; font-size:1.5rem; font-weight:800;">21</div>
+            <div style="color:#27AE60; font-size:1.5rem; font-weight:800;">22</div>
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">Countries</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:8px 16px; flex:1; text-align:center; border-top:2px solid #FF9800;">
-            <div style="color:#FF9800; font-size:1.5rem; font-weight:800;">25</div>
+            <div style="color:#FF9800; font-size:1.5rem; font-weight:800;">28</div>
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">Best Practices</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:8px 16px; flex:1; text-align:center; border-top:2px solid #EF5350;">
-            <div style="color:#EF5350; font-size:1.5rem; font-weight:800;">16%</div>
+            <div style="color:#EF5350; font-size:1.5rem; font-weight:800;">14%/18%</div>
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">P5 & P7 Rate</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:8px 16px; flex:1; text-align:center; border-top:2px solid #9C27B0;">
@@ -266,7 +266,7 @@ if page == "🌍 Global Overview":
         st.session_state.ov_region = "Global View"
 
     region_tabs = {
-        "Global View":   (153, "#4FC3F7"),
+        "Global View":   (154, "#4FC3F7"),
         "North America": (118, "#E63946"),
         "Europe":        (22,  "#2196F3"),
         "Asia":          (7,   "#FF9800"),
@@ -867,7 +867,7 @@ elif page == "🌐 Impact Map":
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">Institutions</div>
                 </div>
                 <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:8px; flex:1; text-align:center;">
-                    <div style="color:#27AE60; font-size:1.3rem; font-weight:800;">21</div>
+                    <div style="color:#27AE60; font-size:1.3rem; font-weight:800;">22</div>
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">Countries</div>
                 </div>
                 <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:8px; flex:1; text-align:center;">
