@@ -95,6 +95,7 @@ def load_country_data():
     return pd.DataFrame([
         ("United States","North America",105,37.09,-95.71),
         ("Canada","North America",12,56.13,-106.35),
+        ("Mexico","North America",1,23.63,-102.55),
         ("Ireland","Europe",9,53.41,-8.24),
         ("United Kingdom","Europe",2,55.37,-3.43),
         ("Portugal","Europe",2,39.39,-8.22),
@@ -119,7 +120,7 @@ def load_country_data():
 @st.cache_data
 def load_regional_data():
     return pd.DataFrame([
-        ("North America",2,23,117),
+        ("North America",3,23,118),
         ("Europe",13,44,22),
         ("Asia",5,48,7),
         ("Oceania",1,14,2),
@@ -153,6 +154,7 @@ def load_best_practices():
 INSTITUTIONS = {
     "United States": ["University of Minnesota","University of Massachusetts Boston","Arizona State University","Duke University","Rochester Institute of Technology","University of North Carolina Wilmington","University of Michigan","Middle Tennessee State University","University of South Florida","University of New Hampshire","University of Arizona","California State University San Bernardino","California State University Fullerton","California State University Long Beach","Dominican University of California","Fielding Graduate University","Los Angeles Pierce College","Palo Alto University","San Diego State University","Santa Monica College","UCLA","UC Berkeley","University of San Francisco","University of Southern California","University of the Pacific","Colorado State University","University of Colorado Denver","University of Colorado Anschutz","University of Colorado Colorado Springs","Central Connecticut State University","Goodwin University","Quinnipiac University","University of Bridgeport","University of Connecticut","University of Hartford","Florida Atlantic University","Florida State University","Eckerd College","St. Thomas University","Georgia State University","University of North Georgia","University of Hawaii at Manoa","Northeastern Illinois University","University of Illinois Urbana-Champaign","Concordia University Chicago","Purdue University","University of Indianapolis","Wichita State University","Frontier Nursing University","Northern Kentucky University","Western Kentucky University","Franciscan Missionaries of Our Lady University","University of Maine","University of New England","Towson University","University of Maryland Baltimore","University of Maryland Baltimore County","Lasell University","UMass Amherst","UMass Dartmouth","UMass Lowell","UMass Medical School","Springfield College","William James College","Eastern Michigan University","Michigan State University","Wayne State University","University of Minnesota Duluth","University of St Thomas","St Catherine University","St Cloud State University","Mississippi State University","University of Mississippi","Missouri State University","Washington University in St Louis","University of Montana","University of Nebraska at Omaha","Fairleigh Dickinson University","Stockton University","Hofstra University","Hunter College CUNY","Ithaca College","Purchase College SUNY","Cleveland State University","Miami University","University of Akron","University of Cincinnati","University of Central Oklahoma","Portland State University","Southern Oregon University","Western Oregon University","Drexel University","Pennsylvania State University","University of Rhode Island","East Tennessee State University","Tennessee State University","University of Texas at Austin","University of Utah","University of Vermont","Virginia Commonwealth University","Shepherd University","West Virginia University","University of Wisconsin La Crosse","University of Wisconsin Green Bay","University of Wisconsin Superior"],
     "Canada": ["University of Calgary","Kwantlen Polytechnic University","University of British Columbia","UBC Okanagan","University of the Fraser Valley","Niagara College","McMaster University","Toronto Metropolitan University","Trent University","Ontario Tech University (UOIT)","University of Windsor","University of Manitoba"],
+    "Mexico": ["ITESO, Universidad Jesuita de Guadalajara"],
     "Ireland": ["Atlantic Technological University","Dublin City University","Mary Immaculate College","Munster Technological University","National College of Ireland","Royal College of Surgeons Ireland","Trinity College Dublin","University College Dublin","University of Limerick"],
     "United Kingdom": ["University of Strathclyde","Ulster University"],
     "Portugal": ["ISEG — Lisbon School of Economics","Escola Superior de Saude de Santa Maria"],
@@ -234,7 +236,7 @@ if page == "🌍 Global Overview":
     st.markdown("""
     <div style="display:flex; gap:8px; margin:6px 0;">
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:8px 16px; flex:1; text-align:center; border-top:2px solid #4FC3F7;">
-            <div style="color:#4FC3F7; font-size:1.5rem; font-weight:800;">153</div>
+            <div style="color:#4FC3F7; font-size:1.5rem; font-weight:800;">154</div>
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">Member Institutions</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:8px 16px; flex:1; text-align:center; border-top:2px solid #E63946;">
@@ -265,7 +267,7 @@ if page == "🌍 Global Overview":
 
     region_tabs = {
         "Global View":   (153, "#4FC3F7"),
-        "North America": (117, "#E63946"),
+        "North America": (118, "#E63946"),
         "Europe":        (22,  "#2196F3"),
         "Asia":          (7,   "#FF9800"),
         "South America": (5,   "#00BCD4"),
@@ -555,6 +557,7 @@ elif page == "🗺️ Regional Equity":
         "Brazil": {"pop65": 24431586, "per_m": 0.123},
         "Chile": {"pop65": 2897512, "per_m": 0.690},
         "Turkey": {"pop65": 9078171, "per_m": 0.110},
+        "Mexico": {"pop65": 9831957, "per_m": 0.102},
     }
     df_country["Pop_65_M"] = df_country["Country"].map(lambda x: round(pop65_dict.get(x, {}).get("pop65", 0)/1e6, 2))
     df_country["AFU_Per_Million_Seniors"] = df_country["Country"].map(lambda x: pop65_dict.get(x, {}).get("per_m", 0))
@@ -860,7 +863,7 @@ elif page == "🌐 Impact Map":
         else:
             st.markdown("""<div style="display:flex; gap:8px; margin-top:4px;">
                 <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:8px; flex:1; text-align:center;">
-                    <div style="color:#00d4ff; font-size:1.3rem; font-weight:800;">153</div>
+                    <div style="color:#00d4ff; font-size:1.3rem; font-weight:800;">154</div>
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">Institutions</div>
                 </div>
                 <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:8px; flex:1; text-align:center;">
