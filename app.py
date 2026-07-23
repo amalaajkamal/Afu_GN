@@ -129,16 +129,16 @@ def load_regional_data():
 @st.cache_data
 def load_principles_data():
     return pd.DataFrame([
-        (1,"P1: Encourage participation\nof older adults",18,72.0,"Well Implemented"),
-        (2,"P2: Personal & career\ndevelopment",8,32.0,"Moderately Implemented"),
-        (3,"P3: Recognize educational\nneeds",7,28.0,"Moderately Implemented"),
-        (4,"P4: Intergenerational\nlearning",14,56.0,"Well Implemented"),
-        (5,"P5: Online access for\nolder adults",4,16.0,"Underimplemented"),
-        (6,"P6: Research agenda\ninformed by aging",12,48.0,"Well Implemented"),
-        (7,"P7: Student understanding\nof longevity",4,16.0,"Underimplemented"),
-        (8,"P8: Health, wellness &\ncultural access",12,48.0,"Well Implemented"),
-        (9,"P9: Engage retired\ncommunity",7,28.0,"Moderately Implemented"),
-        (10,"P10: Dialogue with aging\norganizations",5,20.0,"Underimplemented"),
+        (1,"P1: Encourage participation\nof older adults",20,71.0,"Well Implemented"),
+        (2,"P2: Personal & career\ndevelopment",9,32.0,"Moderately Implemented"),
+        (3,"P3: Recognize educational\nneeds",8,29.0,"Moderately Implemented"),
+        (4,"P4: Intergenerational\nlearning",15,54.0,"Well Implemented"),
+        (5,"P5: Online access for\nolder adults",4,14.0,"Underimplemented"),
+        (6,"P6: Research agenda\ninformed by aging",14,50.0,"Well Implemented"),
+        (7,"P7: Student understanding\nof longevity",5,18.0,"Underimplemented"),
+        (8,"P8: Health, wellness &\ncultural access",13,46.0,"Well Implemented"),
+        (9,"P9: Engage retired\ncommunity",7,25.0,"Moderately Implemented"),
+        (10,"P10: Dialogue with aging\norganizations",6,21.0,"Underimplemented"),
     ], columns=["Principle_Number","Short_Label","Mentions","Pct","Gap_Flag"])
 
 @st.cache_data
@@ -254,7 +254,7 @@ if page == "🌍 Global Overview":
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">P5 & P7 Rate</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:8px 16px; flex:1; text-align:center; border-top:2px solid #9C27B0;">
-            <div style="color:#9C27B0; font-size:1.5rem; font-weight:800;">11%</div>
+            <div style="color:#9C27B0; font-size:1.5rem; font-weight:800;">13%</div>
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">Submission Rate</div>
         </div>
     </div>
@@ -440,7 +440,7 @@ elif page == "📐 Principle Gap Analysis":
             📐 AFU PRINCIPLE IMPLEMENTATION GAP ANALYSIS
         </span>
         <span style="color:#37474F; font-size:0.78rem; margin-left:12px;">
-            Based on 25 Best Practice submissions from 17 institutions
+            Based on 28 Best Practice submissions from 20 institutions
         </span>
     </div>
     """, unsafe_allow_html=True)
@@ -465,7 +465,7 @@ elif page == "📐 Principle Gap Analysis":
             <div style="color:#546E7A; font-size:0.65rem; text-transform:uppercase;">Underimplemented</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:6px 12px; flex:2; text-align:center; border-top:2px solid #EF5350;">
-            <div style="color:#EF5350; font-size:1.1rem; font-weight:800;">P5 & P7 — Only 16%</div>
+            <div style="color:#EF5350; font-size:1.1rem; font-weight:800;">P5 — Only 14% | P7 — Only 18%</div>
             <div style="color:#546E7A; font-size:0.65rem; text-transform:uppercase;">Most Critical Gap — Online Access & Longevity Dividend</div>
         </div>
     </div>
@@ -494,7 +494,7 @@ elif page == "📐 Principle Gap Analysis":
     )
     st.plotly_chart(fig_p, use_container_width=True, config={"displayModeBar": False})
 
-    st.markdown('<div style="color:#EF5350; font-size:0.78rem; padding:6px 10px; background:#1a0a0a; border-left:3px solid #EF5350; border-radius:0 4px 4px 0; margin:4px 0;">⚠️ P5 (Online access) and P7 (Longevity dividend) cited in only 16% of submissions — the critical implementation gap across the network.</div>', unsafe_allow_html=True)
+    st.markdown('<div style="color:#EF5350; font-size:0.78rem; padding:6px 10px; background:#1a0a0a; border-left:3px solid #EF5350; border-radius:0 4px 4px 0; margin:4px 0;">⚠️ P5 (Online access) cited in only 14% and P7 (Longevity dividend) in only 18% of submissions — the most underimplemented principles across the network.</div>', unsafe_allow_html=True)
 
     # Audience chart — below, full width
     st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin:8px 0 2px;">WHO DO ACTIVITIES TARGET?</div>', unsafe_allow_html=True)
@@ -876,7 +876,7 @@ elif page == "🌐 Impact Map":
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">N.America Share</div>
                 </div>
                 <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:8px; flex:1; text-align:center;">
-                    <div style="color:#9C27B0; font-size:1.3rem; font-weight:800;">11%</div>
+                    <div style="color:#9C27B0; font-size:1.3rem; font-weight:800;">13%</div>
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">Best Practice</div>
                 </div>
             </div>""", unsafe_allow_html=True)
