@@ -63,11 +63,26 @@ class Institution(BaseModel):
     url: Optional[str] = None
 
 
+class MembersResponse(BaseModel):
+    count: int
+    results: list[Institution]
+
+
 class MetaInfo(BaseModel):
     total_institutions: int
     scraped_at: Optional[float]
     cache_age_seconds: Optional[float]
     regions: list[str]
+
+
+def _count_by(data: list[dict], field: str) -> dict:
+    counts: dict = {}
+    for d in data:
+        value = d.get(field)
+        if not value:
+            continue
+        counts[value] = counts.get(value, 0) + 1
+    return dict(sorted(counts.items(), key=lambda kv: kv[0]))
 
 
 def _run_scrape(regions: Optional[list] = None):
@@ -115,18 +130,21 @@ def root():
             "/members",
             "/members/regions",
             "/members/regions/{region}",
+            "/members/countries",
             "/members/countries/{country}",
+            "/members/states",
             "/refresh",
         ],
     }
 
 
-@app.get("/members", response_model=list[Institution], tags=["members"])
+@app.get("/members", response_model=MembersResponse, tags=["members"])
 def get_all_members(
     region: Optional[str] = Query(None, description="Filter by region, e.g. 'Asia'"),
     country: Optional[str] = Query(None, description="Filter by country, e.g. 'Canada'"),
 ):
-    """Return every scraped institution, optionally filtered by region and/or country."""
+    """Return every scraped institution (with a total count), optionally
+    filtered by region and/or country."""
     _ensure_cache_fresh(block=True)
     with _cache_lock:
         data = _cache["data"] or []
@@ -135,25 +153,25 @@ def get_all_members(
         data = [d for d in data if d["region"].lower() == region.lower()]
     if country:
         data = [d for d in data if (d.get("country") or "").lower() == country.lower()]
-    return data
+    return MembersResponse(count=len(data), results=data)
 
 
 @app.get("/members/regions", tags=["members"])
 def list_regions():
-    """List the five top-level regions and how many institutions are in each."""
+    """List the five top-level regions (continents) and how many institutions
+    are in each."""
     _ensure_cache_fresh(block=True)
     with _cache_lock:
         data = _cache["data"] or []
 
-    counts: dict = {}
-    for d in data:
-        counts[d["region"]] = counts.get(d["region"], 0) + 1
-    return counts
+    counts = _count_by(data, "region")
+    return {"count": len(counts), "total_institutions": len(data), "regions": counts}
 
 
-@app.get("/members/regions/{region}", response_model=list[Institution], tags=["members"])
+@app.get("/members/regions/{region}", response_model=MembersResponse, tags=["members"])
 def get_region(region: str):
-    """Return all institutions in a given region (e.g. /members/regions/Asia)."""
+    """Return all institutions in a given region (e.g. /members/regions/Asia),
+    with a total count."""
     _ensure_cache_fresh(block=True)
     with _cache_lock:
         data = _cache["data"] or []
@@ -165,12 +183,30 @@ def get_region(region: str):
             status_code=404,
             detail=f"No institutions found for region '{region}'. Valid regions: {valid}",
         )
-    return result
+    return MembersResponse(count=len(result), results=result)
 
 
-@app.get("/members/countries/{country}", response_model=list[Institution], tags=["members"])
+@app.get("/members/countries", tags=["members"])
+def list_countries(
+    region: Optional[str] = Query(None, description="Filter by region, e.g. 'Asia'"),
+):
+    """List every country with at least one institution and how many
+    institutions are in each, optionally scoped to a region."""
+    _ensure_cache_fresh(block=True)
+    with _cache_lock:
+        data = _cache["data"] or []
+
+    if region:
+        data = [d for d in data if d["region"].lower() == region.lower()]
+
+    counts = _count_by(data, "country")
+    return {"count": len(counts), "total_institutions": len(data), "countries": counts}
+
+
+@app.get("/members/countries/{country}", response_model=MembersResponse, tags=["members"])
 def get_country(country: str):
-    """Return all institutions in a given country (e.g. /members/countries/Canada)."""
+    """Return all institutions in a given country (e.g. /members/countries/Canada),
+    with a total count."""
     _ensure_cache_fresh(block=True)
     with _cache_lock:
         data = _cache["data"] or []
@@ -178,7 +214,26 @@ def get_country(country: str):
     result = [d for d in data if (d.get("country") or "").lower() == country.lower()]
     if not result:
         raise HTTPException(status_code=404, detail=f"No institutions found for country '{country}'.")
-    return result
+    return MembersResponse(count=len(result), results=result)
+
+
+@app.get("/members/states", tags=["members"])
+def list_states(
+    country: Optional[str] = Query(None, description="Filter by country, e.g. 'Canada'"),
+):
+    """List every state/province with at least one institution and how many
+    institutions are in each (only meaningful for countries where the
+    scraper captured a state/province, e.g. Canada and the United States).
+    Optionally scoped to a country."""
+    _ensure_cache_fresh(block=True)
+    with _cache_lock:
+        data = _cache["data"] or []
+
+    if country:
+        data = [d for d in data if (d.get("country") or "").lower() == country.lower()]
+
+    counts = _count_by(data, "state_province")
+    return {"count": len(counts), "total_institutions": len(data), "states": counts}
 
 
 @app.get("/meta", response_model=MetaInfo, tags=["meta"])

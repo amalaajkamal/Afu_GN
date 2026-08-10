@@ -5,34 +5,105 @@ Scrapes the Age-Friendly University Global Network (AFUGN) member directory
 (https://www.afugn.org/afugn-members) into a flat, structured list of
 institutions with their region / country / (optional) state-province.
 
-Why this needs custom logic instead of a simple table scrape:
-The site (Squarespace) is NOT consistent in how many "hops" it takes to get
-from a region page to an actual list of institutions:
+THE SITE IS INCONSISTENT -- READ THIS BEFORE TOUCHING THE PARSER
+==================================================================
+Manually inspecting every region page turned up THREE different patterns for
+how a "group" (country, or state/province) and its institutions are marked up,
+and some pages mix more than one:
 
-    North America:  region page --> country page (e.g. /canada) --> institutions
-                                                    (sometimes grouped by state)
-    Asia:           region page --> institutions directly (grouped by country)
+1. Bold label + plain text lines (most common):
+       <strong>Alberta</strong>
+       University of Calgary
+   Used by: Canada's provinces, all of Asia, Oceania, most of Europe.
 
-So instead of hardcoding depth, we walk each page's content area in document
-order, tracking the current bold "group label" (could be a country name on a
-region page, or a state/province name on a country page). For each item under
-that label we decide:
+2. Nested bullet list -- a <li> containing a nested <ul>/<ol>, where the
+   outer <li>'s own text is the group name and each inner <li> is an
+   institution:
+       <li>Arizona
+         <ul><li>Arizona State University</li><li>University of Arizona</li></ul>
+       </li>
+   Used by: Ireland (inside the Europe page -- mixed with pattern 1!), and
+   EVERY state on the United States page (the single largest page on the
+   site). Missing this pattern was the #1 cause of undercounting.
 
-    - It's a link to another page on afugn.org        -> recurse into it
-      (this is a "drill-down" link, e.g. Region -> Country)
-    - It's a link to an external domain, or plain text -> it's an institution
-      (leaf node)
+3. Bold text wrapped INSIDE a link (institution name, not a group label):
+       <a href="https://www.example.edu"><strong>Example University</strong></a>
+   Used by: Brazil and Chile on the South America page. A naive "any <strong>
+   is a group label" rule misreads these as fake countries and also
+   (combined with an over-eager content-boundary heuristic) was the likely
+   cause of wildly inflated counts on other pages.
 
-This mirrors how the site itself is actually organized and is robust to the
-site's inconsistent depth.
+4. Squarespace "accordion" widget -- a <li class="accordion-item"> whose
+   title lives in a <span class="accordion-item__title"> (buried inside a
+   <button>) and whose institutions live in a *sibling*
+   <div class="accordion-item__dropdown"> as one <p> per institution
+   (plain text, or a link for the odd institution that has a URL):
+       <li class="accordion-item">
+         <p class="accordion-item__title-wrapper">
+           <button><span class="accordion-item__title">Arizona</span></button>
+         </p>
+         <div class="accordion-item__dropdown">
+           <div class="accordion-item__description">
+             <p>Arizona State University</p>
+             <p>University of Arizona</p>
+           </div>
+         </div>
+       </li>
+   Used by: every state on the United States page (the single largest page
+   on the site -- missing this pattern entirely was the #1 cause of
+   undercounting, and requires its own detection since it looks like
+   pattern 2 but has NO nested <ul>/<ol> -- the institutions live in a
+   sibling <div>, not a child list) and the Ireland entry on the Europe
+   page.
+
+Also, the region-hub page for North America (the only region with a further
+per-country page) uses image-only links whose caption follows as a *separate*
+sibling element:
+       <a href="/canada"><img></a>
+       <strong>Canada</strong>
+   so the "label" for that link isn't known until we've looked ahead -- and
+   crucially the caption is inside the *next fe-block sibling*, not just
+   any next sibling of the link's immediate parent. Climbing only to the
+   immediate parent (any div) finds a dead-end with no useful sibling,
+   silently fails the lookahead, and lets the *general* strong-tag-is-a-
+   label rule catch the caption one link too late -- shifting every label
+   on the page by one tile (an earlier bug had Canada's institutions
+   getting the URL slug "canada" as a fallback label, and the United
+   States' institutions wrongly labelled "Canada"). Always climb to the
+   ancestor whose class list contains "fe-block", not just the nearest
+   div/p/li.
+
+DESIGN
+======
+Rather than trying to guess a "content container" by climbing up from the
+heading (which risks accidentally including repeated nav-menu links and
+caused a bad over-count in an earlier version of this file), we do a single
+top-to-bottom walk of the whole page and use two hard, textual boundaries
+that are identical on every page of this site:
+    START: the heading/bold text containing "Member Institution(s) in ..."
+    END:   the <footer> tag
+Everything outside [START, END) is ignored, so repeated nav menus (which
+appear twice on every page, once for desktop once for mobile) can never leak
+in as fake content.
+
+Within [START, END), a single recursive walk classifies each node:
+    - <a> tag, internal (afugn.org) link      -> a drill-down page to recurse into
+    - <a> tag, external link                  -> an institution (leaf)
+    - <strong>/<b> NOT inside an <a>          -> a group label (country/state)
+    - <li> with a nested <ul>/<ol>            -> a group label (see pattern 2)
+    - other plain text                        -> an institution (leaf), but
+      only once we've seen at least one group label (filters out the
+      descriptive intro paragraph every page has before its first group).
 """
 
 from __future__ import annotations
 
+import json
 import re
 import time
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 from urllib.parse import urljoin, urlparse
 
@@ -42,15 +113,30 @@ from bs4 import BeautifulSoup, Tag, NavigableString
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("afugn_scraper")
 
+# Manual overrides mapping institution name -> that institution's own
+# dedicated Age-Friendly University page (afugn.org itself rarely links to
+# these; most member entries there are plain, un-linked text). Populated
+# region-by-region via web research -- see afu_urls.json.
+_AFU_URLS_PATH = Path(__file__).with_name("afu_urls.json")
+
+
+def _load_afu_url_overrides() -> dict:
+    try:
+        with open(_AFU_URLS_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        return {}
+    data.pop("_comment", None)
+    return data
+
+
+AFU_URL_OVERRIDES = _load_afu_url_overrides()
+
 BASE_URL = "https://www.afugn.org"
-MEMBERS_URL = f"{BASE_URL}/afugn-members"
 SITE_DOMAINS = {"afugn.org", "www.afugn.org"}
 
-# Hardcoded entry points: the top-level "afugn-members" page always links to
-# these five regional hub pages. These URLs are stable navigational anchors
-# for the whole site, so we start here rather than trying to auto-detect them
-# (the five region tiles on the landing page use image icons, not obvious
-# hrefs, which makes generic detection brittle).
+# Hardcoded entry points: the top-level "afugn-members" page links to these
+# five regional hub pages. Verified live (July 2026) against the actual site.
 REGION_ENTRY_POINTS = {
     "North America": f"{BASE_URL}/north-american-members",
     "Asia": f"{BASE_URL}/asian-institutions",
@@ -66,11 +152,10 @@ HEADERS = {
     )
 }
 
-# Polite delay between requests (seconds) so we don't hammer the site.
-REQUEST_DELAY = 1.0
+REQUEST_DELAY = 1.0  # polite delay between requests, seconds
 
-# Footer links that show up on every page and should never be treated as
-# content (institution or drill-down links) even though they're internal.
+# Boilerplate internal paths that show up in the nav/footer on every page and
+# must never be treated as a drill-down link or institution.
 FOOTER_HREF_BLOCKLIST = {
     "/become-a-member", "/benefits-of-membership", "/apply",
     "/application-resources", "/bestpractices", "/summit2026", "/lan",
@@ -78,8 +163,10 @@ FOOTER_HREF_BLOCKLIST = {
     "/governance-structure", "/regional-leads", "/collaborators",
     "/age-friendly-ecosystem", "/principles", "/afugn-members",
     "/news-and-media", "/support-afugn", "/stay-connected", "/contact-us",
-    "/cart", "/", "",
+    "/about", "/join-us", "/network-in-action", "/cart", "/",
 }
+
+HEADING_RE = re.compile(r"(?=.*\bmember)(?=.*\binstitution)", re.I)
 
 
 @dataclass
@@ -100,30 +187,24 @@ class Institution:
         }
 
 
-@dataclass
-class ScrapeStats:
-    pages_visited: list = field(default_factory=list)
+def _clean_text(text: str) -> str:
+    return re.sub(r"\s+", " ", text or "").strip()
 
 
 def _is_internal_link(href: str) -> bool:
-    """True if href points to another page on afugn.org (a drill-down link),
-    False if it's external (a university's own site, i.e. an institution)."""
-    if not href:
-        return False
-    if href.startswith("#") or href.startswith("mailto:"):
+    if not href or href.startswith("#") or href.startswith("mailto:"):
         return False
     parsed = urlparse(urljoin(BASE_URL, href))
     return parsed.netloc in SITE_DOMAINS
 
 
-def _is_footer_or_nav_link(href: str) -> bool:
-    """True only for known boilerplate nav/footer links on afugn.org itself.
-    External links (a university's own domain) are never considered nav
-    links here, even if their path is empty (e.g. https://www.asu.edu)."""
-    if not _is_internal_link(href):
-        return False
+def _is_boilerplate_internal_link(href: str) -> bool:
+    """True only for known nav/footer paths on afugn.org itself. Never call
+    this on an external href -- e.g. https://www.asu.edu has an empty path
+    and must NOT be caught here."""
     parsed = urlparse(urljoin(BASE_URL, href))
-    return parsed.path.rstrip("/") in {p.rstrip("/") for p in FOOTER_HREF_BLOCKLIST}
+    path = parsed.path.rstrip("/") or "/"
+    return path in FOOTER_HREF_BLOCKLIST
 
 
 def _fetch(url: str) -> BeautifulSoup:
@@ -134,215 +215,199 @@ def _fetch(url: str) -> BeautifulSoup:
     return BeautifulSoup(resp.text, "html.parser")
 
 
-def _find_content_root(soup: BeautifulSoup) -> Tag:
-    """Locate the block of the page that holds the actual member content,
-    scoped between the 'Member Institution(s) in ...' heading and the site
-    footer. Falls back to <body> if the heading can't be found."""
-    heading = soup.find(
-        lambda tag: tag.name in ("h1", "h2", "h3", "h4", "strong", "b")
-        and tag.get_text(strip=True)
-        and re.search(r"member institution", tag.get_text(), re.I)
-    )
-    if heading is None:
-        return soup.body or soup
-
-    # Walk up to a reasonably-sized container that holds the heading and the
-    # content that follows it (Squarespace wraps each "block" in its own div,
-    # so we climb until we find a parent that also contains later siblings).
-    container = heading
-    for _ in range(6):
-        if container.parent is None:
+def _direct_label_text(li: Tag) -> str:
+    """Text owned directly by a <li> before its nested <ul>/<ol> starts
+    (e.g. the 'Arizona' in <li>Arizona<ul>...institutions...</ul></li>)."""
+    parts = []
+    for child in li.children:
+        if isinstance(child, Tag) and child.name in ("ul", "ol"):
             break
-        container = container.parent
-        # Stop climbing once this container holds more than just the heading
-        if len(container.find_all(["strong", "b", "a", "p"])) > 3:
+        parts.append(child.get_text() if isinstance(child, Tag) else str(child))
+    return _clean_text("".join(parts))
+
+
+def _lookahead_caption(a_tag: Tag):
+    """For image-only drill-down links whose caption is a *following
+    sibling* block (the North-America hub-page pattern), find that caption.
+    Returns (label_text, strong_tag_to_mark_consumed) or (None, None).
+
+    The caption lives in the *next fe-block sibling*, not just any next
+    sibling of the link's nearest div/p/li -- that nearest ancestor is
+    itself several dead-end divs deep with no useful sibling of its own.
+    """
+    block = a_tag
+    while block.parent is not None:
+        block = block.parent
+        classes = block.get("class") or []
+        if "fe-block" in classes:
             break
-    return container
-
-
-def _iter_content_nodes(root: Tag):
-    """Yield (kind, tag) pairs in document order for the tags we care about:
-    bold group-labels, links, and paragraph/line text. Skips the footer."""
-    for el in root.descendants:
-        if not isinstance(el, Tag):
-            continue
-        if el.name == "footer":
+        if block.name == "body":
             break
-        if el.name in ("strong", "b"):
-            yield ("label", el)
-        elif el.name == "a":
-            yield ("link", el)
+    sib = block.find_next_sibling()
+    while sib is not None:
+        if isinstance(sib, Tag):
+            if sib.find("a"):
+                return None, None  # hit the next tile's link first
+            strong = sib.find(["strong", "b"])
+            if strong:
+                text = _clean_text(strong.get_text())
+                if text and not HEADING_RE.search(text):
+                    return text, strong
+            if _clean_text(sib.get_text()):
+                return None, None  # non-empty content with no caption: give up
+        sib = sib.find_next_sibling()
+    return None, None
 
 
-def _clean_text(text: str) -> str:
-    return re.sub(r"\s+", " ", text).strip()
+class _PageParser:
+    """Walks one page's HTML (already scoped to <body>) and produces the
+    list of institutions and drill-down links found on it."""
+
+    def __init__(self, region: str, country: Optional[str]):
+        self.region = region
+        self.country = country
+        self.institutions: list[Institution] = []
+        self.drill_down: list[tuple] = []
+        self.current_label: Optional[str] = None
+        self.label_seen = False
+        self.started = False  # becomes True once we pass the heading
+        self.consumed_ids: set = set()
+
+    def run(self, body: Tag):
+        self._walk(body)
+        return self.institutions, self.drill_down
+
+    # -- helpers -----------------------------------------------------
+    def _emit_institution(self, name: str, url: Optional[str]):
+        name = _clean_text(name)
+        if not name or len(name) < 3:
+            return
+        self.institutions.append(
+            Institution(
+                name=name,
+                region=self.region,
+                country=self.country if self.country else self.current_label,
+                state_province=self.current_label if self.country else None,
+                url=url,
+            )
+        )
+
+    def _set_label(self, text: str):
+        text = _clean_text(text)
+        if text and not HEADING_RE.search(text):
+            self.current_label = text
+            self.label_seen = True
+
+    # -- main walk -----------------------------------------------------
+    def _walk(self, node: Tag):
+        for child in node.children:
+            if isinstance(child, NavigableString):
+                if self.started and self.label_seen:
+                    for line in str(child).split("\n"):
+                        self._emit_institution(line, None)
+                continue
+            if not isinstance(child, Tag):
+                continue
+
+            if child.name in ("script", "style"):
+                continue
+
+            if id(child) in self.consumed_ids:
+                continue
+
+            if child.name == "footer":
+                return  # hard stop: never look past the footer
+
+            if not self.started:
+                # Still looking for the "Member Institution(s) in ..." heading.
+                if child.name in ("h1", "h2", "h3", "h4", "strong", "b") and HEADING_RE.search(
+                    child.get_text()
+                ):
+                    self.started = True
+                    continue
+                self._walk(child)
+                continue
+
+            # From here on, self.started is True.
+            if child.name == "a":
+                self._handle_link(child)
+                continue  # never descend into a link's own children separately
+
+            if child.name == "li":
+                title_span = child.find("span", class_="accordion-item__title")
+                dropdown = child.find("div", class_="accordion-item__dropdown")
+                if title_span is not None and dropdown is not None:
+                    self._set_label(title_span.get_text())
+                    self._walk(dropdown)
+                    continue
+
+                nested_list = child.find(["ul", "ol"], recursive=False)
+                if nested_list is not None:
+                    self._set_label(_direct_label_text(child))
+                    self._walk(nested_list)
+                    continue
+                # Fallback: some Squarespace list blocks render the
+                # sub-list as the NEXT SIBLING of the label <li> rather
+                # than truly nested inside it, e.g.:
+                #   <li>Ireland</li>
+                #   <ul><li>Dublin City University</li>...</ul>
+                sib = child.find_next_sibling()
+                if isinstance(sib, Tag) and sib.name in ("ul", "ol"):
+                    label_text = _clean_text(child.get_text())
+                    if label_text and not HEADING_RE.search(label_text):
+                        self._set_label(label_text)
+                        self._walk(sib)
+                        self.consumed_ids.add(id(sib))
+                        continue
+                self._walk(child)
+                continue
+
+            if child.name in ("strong", "b"):
+                if id(child) in self.consumed_ids:
+                    continue
+                self._set_label(child.get_text())
+                continue
+
+            self._walk(child)
+
+    def _handle_link(self, a_tag: Tag):
+        href = a_tag.get("href", "")
+        if not href:
+            return
+        if _is_internal_link(href) and _is_boilerplate_internal_link(href):
+            return  # nav/footer link, never content
+
+        full_url = urljoin(BASE_URL, href)
+        text = _clean_text(a_tag.get_text())
+        if not text:
+            img = a_tag.find("img")
+            if img and img.get("alt"):
+                text = _clean_text(img["alt"])
+
+        if _is_internal_link(href):
+            label = self.current_label
+            if label is None:
+                label, consumed_tag = _lookahead_caption(a_tag)
+                if consumed_tag is not None:
+                    self.consumed_ids.add(id(consumed_tag))
+            if label is None:
+                label = text or full_url.rsplit("/", 1)[-1]
+            self.drill_down.append((label, full_url))
+            # Consume so this one-off tile caption can't bleed into the next
+            # tile's link (only matters on hub pages with several tiles).
+            self.current_label = None
+            return
+
+        if not text:
+            return
+        self._emit_institution(text, full_url)
 
 
 def _parse_group_page(url: str, region: str, country: Optional[str] = None):
-    """Parse one page (region-hub or country page) and return:
-        institutions: list[Institution]
-        drill_down:   list[(label, url, is_country_level)]
-    """
     soup = _fetch(url)
-    root = _find_content_root(soup)
-
-    institutions: list[Institution] = []
-    drill_down: list[tuple] = []
-
-    current_label = None
-    seen_hrefs_under_label = set()
-
-    nodes = list(_iter_content_nodes(root))
-
-    consumed_label_indices: set = set()
-
-    def _next_label_before_next_link(start_idx: int) -> Optional[str]:
-        """Peek ahead from start_idx for a bold label that appears before
-        the next link (handles the common Squarespace pattern of an image
-        link immediately followed by its bold caption, e.g. a country
-        icon linking to /canada followed by the text 'Canada'). Marks the
-        found label index as "consumed" so it's treated as a one-off
-        caption for this link only, and doesn't persist as current_label
-        for whatever comes after it."""
-        for j in range(start_idx + 1, len(nodes)):
-            k2, t2 = nodes[j]
-            if k2 == "link":
-                return None
-            if k2 == "label":
-                text = _clean_text(t2.get_text())
-                if text and not re.search(r"member institution", text, re.I):
-                    consumed_label_indices.add(j)
-                    return text
-        return None
-
-    for idx, (kind, tag) in enumerate(nodes):
-        if kind == "label":
-            if idx in consumed_label_indices:
-                continue
-            text = _clean_text(tag.get_text())
-            if text and not re.search(r"member institution", text, re.I):
-                current_label = text
-                seen_hrefs_under_label = set()
-            continue
-
-        if kind == "link":
-            href = tag.get("href", "")
-            if not href or _is_footer_or_nav_link(href):
-                continue
-            full_url = urljoin(BASE_URL, href)
-            if full_url in seen_hrefs_under_label:
-                continue
-            seen_hrefs_under_label.add(full_url)
-
-            link_text = _clean_text(tag.get_text())
-            if not link_text:
-                # Image-only links (e.g. a country flag icon with no
-                # caption text) fall back to the image's alt attribute.
-                img = tag.find("img")
-                if img and img.get("alt"):
-                    link_text = _clean_text(img["alt"])
-
-            if _is_internal_link(href):
-                # A link back to afugn.org content => a deeper page
-                # (region -> country page). Image-only country links carry
-                # no useful label of their own (the alt text is a photo
-                # description, not the country name) -- the real label is
-                # the bold heading that follows/precedes it, so prefer
-                # current_label whenever we have one.
-                label = (
-                    current_label
-                    or _next_label_before_next_link(idx)
-                    or link_text
-                    or full_url.rsplit("/", 1)[-1]
-                )
-                drill_down.append((label, full_url))
-                # Consume the label so it can't bleed into the next
-                # drill-down link (each country tile on a region-hub page
-                # has its own one-off caption, unlike state/country labels
-                # on a leaf page which legitimately apply to several
-                # institutions in a row).
-                current_label = None
-                continue
-
-            if not link_text:
-                continue
-
-            institutions.append(
-                    Institution(
-                        name=link_text,
-                        region=region,
-                        country=country if country else current_label,
-                        state_province=current_label if country else None,
-                        url=full_url,
-                    )
-                )
-
-    # Now also capture *plain-text* institution names that are not links at
-    # all (e.g. Canada's "University of Calgary" has no href). These live as
-    # NavigableStrings between the label and the next label/link.
-    institutions.extend(
-        _extract_plain_text_institutions(root, region, country, seen_labels=None)
-    )
-
-    return institutions, drill_down
-
-
-def _extract_plain_text_institutions(root: Tag, region: str, country: Optional[str], seen_labels):
-    """Walk paragraph-like blocks to pick up institution names that are plain
-    text (no <a> tag at all), grouped under the nearest preceding bold label.
-    """
-    results: list[Institution] = []
-    current_label = None
-    label_seen = False
-    already_captured_texts = set()
-
-    # Collect the set of texts already captured as links, so we don't
-    # duplicate them if a paragraph also contains the linked text.
-    for a in root.find_all("a"):
-        t = _clean_text(a.get_text())
-        if t:
-            already_captured_texts.add(t)
-
-    for el in root.descendants:
-        if isinstance(el, Tag):
-            if el.name == "footer":
-                break
-            if el.name in ("strong", "b"):
-                text = _clean_text(el.get_text())
-                if text and not re.search(r"member institution", text, re.I):
-                    current_label = text
-                    label_seen = True
-            continue
-        if isinstance(el, NavigableString):
-            if not label_seen:
-                # Anything before the first bold group label is descriptive
-                # intro text (e.g. "Select a country for a full list..."),
-                # never an institution name.
-                continue
-            # Skip strings that are children of <strong>/<b>/<a> (already
-            # handled) or of <script>/<style>
-            parent_names = {p.name for p in el.parents if isinstance(p, Tag)}
-            if parent_names & {"strong", "b", "a", "script", "style"}:
-                continue
-            for line in str(el).split("\n"):
-                text = _clean_text(line)
-                if not text or len(text) < 3:
-                    continue
-                if text in already_captured_texts:
-                    continue
-                if re.search(r"member institution", text, re.I):
-                    continue
-                results.append(
-                    Institution(
-                        name=text,
-                        region=region,
-                        country=country if country else current_label,
-                        state_province=current_label if country else None,
-                        url=None,
-                    )
-                )
-                already_captured_texts.add(text)
-    return results
+    body = soup.body or soup
+    parser = _PageParser(region, country)
+    return parser.run(body)
 
 
 def scrape_all(regions: Optional[list] = None, max_depth: int = 3) -> list[dict]:
@@ -365,8 +430,6 @@ def scrape_all(regions: Optional[list] = None, max_depth: int = 3) -> list[dict]
         _crawl(region_url, region_name, country=None, depth=0, max_depth=max_depth,
                out=all_institutions)
 
-    # De-duplicate (same institution can occasionally appear twice if the
-    # site double-links it).
     seen = set()
     deduped = []
     for inst in all_institutions:
@@ -374,6 +437,8 @@ def scrape_all(regions: Optional[list] = None, max_depth: int = 3) -> list[dict]
         if key in seen:
             continue
         seen.add(key)
+        if not inst.url:
+            inst.url = AFU_URL_OVERRIDES.get(inst.name)
         deduped.append(inst)
 
     return [inst.to_dict() for inst in deduped]
@@ -392,11 +457,6 @@ def _crawl(url: str, region: str, country: Optional[str], depth: int, max_depth:
     out.extend(institutions)
 
     for label, sub_url in drill_down:
-        # If we're on the region hub page, `label` is a country name.
-        # If we're already inside a country page, `label` is a
-        # state/province -- but since state/province level pages linking
-        # further out are not expected on this site, we still pass it
-        # through as `country` only when we don't already have one.
         next_country = country or label
         _crawl(sub_url, region, next_country, depth + 1, max_depth, out)
 

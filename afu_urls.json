@@ -1,0 +1,12 @@
+{
+  "_comment": "Manual overrides for Institution.url: each institution's own dedicated Age-Friendly University page (not the AFUGN directory listing). Keyed by exact institution name as produced by scraper.py. Filled in region-by-region via web research; only overrides entries where the scraper found no URL on afugn.org itself.",
+  "University of Calgary": "https://obrieniph.ucalgary.ca/age-friendly-university",
+  "Kwantlen Polytechnic University": "https://www.kpu.ca/news/2023/10/31/kpu-now-designated-age-friendly-university",
+  "University of British Columbia Okanagan": "https://aginginplace.ok.ubc.ca/age-friendly-university/about-afu/",
+  "University of the Fraser Valley": "https://www.ufv.ca/aging/age-friendly-university-/",
+  "Niagara College": "https://www.niagaracollege.ca/blog/2019/02/28/niagara-college-becomes-canadas-first-college-to-join-age-friendly-university-global-network/",
+  "McMaster University": "https://mira.mcmaster.ca/community/age-friendly-university/",
+  "Trent University": "https://www.trentu.ca/tuarc/story/18/08/13/trent-university-joins-global-age-friendly-university-network",
+  "University of Ontario Institute of Technology": "https://ontariotechu.ca/agefriendly/",
+  "University of Windsor": "https://www.uwindsor.ca/research/368/age-friendly-university"
+}
