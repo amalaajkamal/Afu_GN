@@ -277,27 +277,41 @@ def get_institutions_for_country(country):
     api_country_name = STATIC_TO_API_COUNTRY_NAME.get(country, country)
     payload, err = api_client.fetch_members(country=api_country_name)
     if not err and payload.get("results"):
-        return [{"name": m["name"], "url": m.get("url")} for m in payload["results"]]
-    return [{"name": name, "url": None} for name in STATIC_INSTITUTIONS.get(country, [])]
+        return [
+            {
+                "name": m["name"],
+                "url": m.get("url"),
+                "latitude": m.get("latitude"),
+                "longitude": m.get("longitude"),
+            }
+            for m in payload["results"]
+        ]
+    return [{"name": name, "url": None, "latitude": None, "longitude": None} for name in STATIC_INSTITUTIONS.get(country, [])]
 
 
 def institution_points(df_countries, jitter_deg=0.55):
-    """Expand country-level rows into one small point per institution,
-    scattered around the country's coordinates so each institution gets its
-    own marker on the map instead of a single size-scaled country bubble."""
+    """Expand country-level rows into one point per institution. Institutions
+    the API has real geocoded coordinates for (see geocode.py) are plotted at
+    their actual location; any without one yet (geocoding miss, or the static
+    fallback list when the API is unreachable) fall back to a jittered point
+    around the country's centroid so the map still shows a marker for them."""
     rows = []
     for _, r in df_countries.iterrows():
-        names = [inst["name"] for inst in get_institutions_for_country(r["Country"])]
+        insts = get_institutions_for_country(r["Country"])
         n = int(r["AFU_Members"])
         for i in range(n):
-            name = names[i] if i < len(names) else f"{r['Country']} institution {i+1}"
-            rng = np.random.default_rng(abs(hash((r["Country"], i))) % (2**32))
+            inst = insts[i] if i < len(insts) else {"name": f"{r['Country']} institution {i+1}"}
+            lat, lon = inst.get("latitude"), inst.get("longitude")
+            if lat is None or lon is None:
+                rng = np.random.default_rng(abs(hash((r["Country"], i))) % (2**32))
+                lat = r["Latitude"] + rng.uniform(-jitter_deg, jitter_deg)
+                lon = r["Longitude"] + rng.uniform(-jitter_deg, jitter_deg)
             rows.append({
-                "Institution": name,
+                "Institution": inst["name"],
                 "Country": r["Country"],
                 "Region": r["Region"],
-                "Latitude": r["Latitude"] + rng.uniform(-jitter_deg, jitter_deg),
-                "Longitude": r["Longitude"] + rng.uniform(-jitter_deg, jitter_deg),
+                "Latitude": lat,
+                "Longitude": lon,
             })
     return pd.DataFrame(rows, columns=["Institution", "Country", "Region", "Latitude", "Longitude"])
 
@@ -511,16 +525,20 @@ if page == "🌍 Global Overview":
             hovertemplate="<b>%{customdata[0]}</b><br>AFU Members: %{customdata[1]}<extra></extra>",
         ))
 
-    if sel != "Global View":
+    if sel == "Global View":
+        pins = institution_points(df_country)
+        pin_line_colors = pins["Region"].map(REGION_COLORS).fillna("#888").tolist()
+    else:
         pins = institution_points(df_country[df_country["Region"] == sel])
-        fig_ov.add_trace(go.Scattergeo(
-            lat=pins["Latitude"], lon=pins["Longitude"],
-            mode="markers", showlegend=False,
-            marker=dict(size=4, color="#ffffff", opacity=0.9,
-                        line=dict(width=1, color=REGION_COLORS.get(sel, "#888"))),
-            customdata=pins[["Institution", "Country"]].values,
-            hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]}<extra></extra>",
-        ))
+        pin_line_colors = REGION_COLORS.get(sel, "#888")
+    fig_ov.add_trace(go.Scattergeo(
+        lat=pins["Latitude"], lon=pins["Longitude"],
+        mode="markers", showlegend=False,
+        marker=dict(size=4, color="#ffffff", opacity=0.9,
+                    line=dict(width=1, color=pin_line_colors)),
+        customdata=pins[["Institution", "Country"]].values,
+        hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]}<extra></extra>",
+    ))
 
     region_bounds = {
         "Global View":   {"lat": [-55, 80],  "lon": [-170, 180]},
@@ -1064,6 +1082,17 @@ elif page == "🌐 Impact Map":
             hoverinfo="skip", showlegend=False, zmin=0, zmax=1,
         ))
         if sel_region == "Asia":
+            # Pakistan/China above are highlighted using Plotly's default ISO-3
+            # boundaries, which draw their disputed claims over Kashmir/Aksai
+            # Chin -- redraw India's correct outline here with an OPAQUE mask
+            # (not just a border) so that stray line can't show through, then
+            # add the same highlight tint/border as the other Asia countries.
+            fig_impact.add_trace(go.Choropleth(
+                geojson=india_geojson, locations=["India"], featureidkey="properties.name",
+                z=[1], colorscale=[[0, "#1a2744"], [1, "#1a2744"]],
+                showscale=False, marker_line_color="#2e4a8a", marker_line_width=0.5,
+                hoverinfo="skip", showlegend=False, zmin=0, zmax=1,
+            ))
             fig_impact.add_trace(go.Choropleth(
                 geojson=india_geojson, locations=["India"], featureidkey="properties.name",
                 z=[1], colorscale=[[0,"rgba(255,255,255,0.04)"],[1,"rgba(255,255,255,0.04)"]],
@@ -1090,13 +1119,17 @@ elif page == "🌐 Impact Map":
         if sel_country:
             pin_df = pin_df[pin_df["Country"] == sel_country]
         pins = institution_points(pin_df)
-        fig_impact.add_trace(go.Scattergeo(
-            lat=pins["Latitude"], lon=pins["Longitude"],
-            mode="markers", showlegend=False,
-            marker=dict(size=4, color="#ffffff", opacity=0.9,
-                        line=dict(width=1, color=region_highlight_colors.get(sel_region, "#4FC3F7"))),
-            customdata=pins[["Institution", "Country"]].values,
-            hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]}<extra></extra>",
+        pin_line_colors = region_highlight_colors.get(sel_region, "#4FC3F7")
+    else:
+        pins = institution_points(df_country)
+        pin_line_colors = pins["Region"].map(region_highlight_colors).fillna("#4FC3F7").tolist()
+    fig_impact.add_trace(go.Scattergeo(
+        lat=pins["Latitude"], lon=pins["Longitude"],
+        mode="markers", showlegend=False,
+        marker=dict(size=4, color="#ffffff", opacity=0.9,
+                    line=dict(width=1, color=pin_line_colors)),
+        customdata=pins[["Institution", "Country"]].values,
+        hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]}<extra></extra>",
         ))
 
     fig_impact.update_layout(

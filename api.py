@@ -29,6 +29,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+import geocode
 import scraper
 
 app = FastAPI(
@@ -61,6 +62,8 @@ class Institution(BaseModel):
     country: Optional[str] = None
     state_province: Optional[str] = None
     url: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class MembersResponse(BaseModel):
@@ -97,10 +100,20 @@ def _run_scrape(regions: Optional[list] = None):
                 # region(s), keeping everything else from the last full scrape.
                 existing = _cache["data"] or []
                 kept = [d for d in existing if d["region"] not in regions]
-                _cache["data"] = kept + data
+                data = kept + data
+                _cache["data"] = data
             _cache["scraped_at"] = time.time()
     finally:
         _scrape_in_progress.clear()
+
+    # Geocoding is rate-limited to ~1 institution/sec by Nominatim's usage
+    # policy, so for ~150 institutions it can take well over an hour. Run it
+    # in its own background thread *after* publishing the cache, rather than
+    # blocking on it here, so /members etc. are usable immediately with
+    # whatever coordinates are already disk-cached; latitude/longitude for
+    # the rest fill in progressively as this thread mutates the same dicts
+    # that are already sitting in `_cache["data"]`.
+    threading.Thread(target=geocode.enrich_with_coordinates, args=(data,), daemon=True).start()
 
 
 def _ensure_cache_fresh(block: bool = False):

@@ -25,6 +25,10 @@ directory, scraped from https://www.afugn.org/afugn-members. Two pieces:
   call `api.py`'s endpoints, with `st.cache_data` caching and
   `(data, error)`-tuple returns so the dashboard can fall back instead of
   crashing when the API is down.
+- `geocode.py` — looks up real lat/lon coordinates per institution via the
+  OpenStreetMap Nominatim search API (no key required) so newly-added AFUGN
+  members get plotted automatically instead of needing a hardcoded
+  coordinate table; see "Institution geocoding" below.
 
 ## Commands
 
@@ -147,15 +151,49 @@ Thin FastAPI wrapper around `scraper.scrape_all()`:
 - Endpoints: `/`, `/members` (filterable by `region`/`country`),
   `/members/regions`, `/members/regions/{region}`,
   `/members/countries/{country}`, `/meta` (cache status), `/refresh`.
+- After every scrape (full or region-scoped) is published to the cache,
+  `_run_scrape` kicks off `geocode.enrich_with_coordinates()` in its own
+  daemon thread rather than blocking on it — geocoding ~150 institutions at
+  Nominatim's ~1/sec policy can take well over an hour, and readers
+  shouldn't have to wait on that just to get the newly-scraped names/URLs.
+  That thread mutates the same dicts already sitting in `_cache["data"]`, so
+  `latitude`/`longitude` fill in progressively: `null` until a lookup
+  completes (or if it fails), then populated in place. See "Institution
+  geocoding" below.
+
+### Institution geocoding (`geocode.py`)
+
+Per-institution coordinates are looked up live against OpenStreetMap's
+Nominatim search API (`name, country` as the query, falling back to just
+`name` on a miss) — nothing about individual universities is hardcoded, so an
+institution AFUGN adds to its site in the future is geocoded automatically
+the next time `api.py` scrapes.
+
+- Nominatim's usage policy caps public requests at 1/second and requires a
+  descriptive `User-Agent`; `geocode.py` enforces both (`REQUEST_DELAY`,
+  `USER_AGENT`).
+- Results are cached to disk at `geocode_cache.json` (gitignored, keyed by
+  `name|country`, persists across process restarts) so repeat scrapes only
+  pay the network/rate-limit cost for institutions not seen before — an
+  institution that fails to geocode is cached as `None` too, so it isn't
+  retried on every scrape.
+- If `api.py` is unreachable, `app.py`/`api_client.py` never see this data at
+  all and fall back to `STATIC_INSTITUTIONS` (name-only, no coordinates); see
+  below.
 
 ### Dashboard ↔ API integration (`app.py` + `api_client.py`)
 
 `app.py` calls `api.py` (default `http://127.0.0.1:8000`, override via
 `AFU_API_BASE_URL`) through `api_client.py` for everything the API covers —
 per-country/region institution counts, country lists, and per-institution
-`url`s (rendered as clickable links where non-null). Coordinates,
-population-65+ figures, and principle/best-practices data have no API
-equivalent and stay static/CSV-driven.
+`url`s and geocoded `latitude`/`longitude` (see "Institution geocoding"
+above). `institution_points()` in `app.py` plots each institution at its real
+API-supplied coordinates, falling back to a jittered point around the
+country's static centroid only when an institution has no coordinates yet
+(geocoding miss, or the API-unreachable static fallback list). The country-
+and region-level centroid table, population-65+ figures, and
+principle/best-practices data still have no API equivalent and stay
+static/CSV-driven.
 
 **Country names from the live scrape don't always match this dashboard's
 static lat/lon table** (e.g. the site's "United States of America" vs. the
