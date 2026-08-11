@@ -13,6 +13,18 @@ directory, scraped from https://www.afugn.org/afugn-members. Two pieces:
 - `inspect_page.py` — standalone diagnostic tool (not imported by the other
   two files) for dumping a page's real tag structure when the scraper needs
   to be adjusted against actual markup.
+- `app.py` — Streamlit dashboard (AFU Global Network Dashboard) visualizing
+  membership data (country/region coverage, principle frequency, activity
+  type, audience, summary metrics). Institution/country/region counts and
+  per-institution links are pulled live from `api.py` via `api_client.py`
+  (with graceful fallback to a static snapshot if the API is unreachable);
+  see "Dashboard ↔ API integration" below. Population-65+ figures, AFU
+  principle/gap analysis, and the Best Practices Explorer have no API
+  equivalent and remain static/CSV-driven (`Form_Data_Entry-Grid_view.csv`).
+- `api_client.py` — thin `requests`-based client used only by `app.py` to
+  call `api.py`'s endpoints, with `st.cache_data` caching and
+  `(data, error)`-tuple returns so the dashboard can fall back instead of
+  crashing when the API is down.
 
 ## Commands
 
@@ -22,6 +34,9 @@ pip install -r requirements.txt
 # Run the API server (auto-reload)
 uvicorn api:app --reload --port 8000
 # -> Swagger UI at http://127.0.0.1:8000/docs
+
+# Run the Streamlit dashboard
+streamlit run app.py
 
 # Run the scraper standalone, dumps JSON to stdout
 
@@ -132,3 +147,26 @@ Thin FastAPI wrapper around `scraper.scrape_all()`:
 - Endpoints: `/`, `/members` (filterable by `region`/`country`),
   `/members/regions`, `/members/regions/{region}`,
   `/members/countries/{country}`, `/meta` (cache status), `/refresh`.
+
+### Dashboard ↔ API integration (`app.py` + `api_client.py`)
+
+`app.py` calls `api.py` (default `http://127.0.0.1:8000`, override via
+`AFU_API_BASE_URL`) through `api_client.py` for everything the API covers —
+per-country/region institution counts, country lists, and per-institution
+`url`s (rendered as clickable links where non-null). Coordinates,
+population-65+ figures, and principle/best-practices data have no API
+equivalent and stay static/CSV-driven.
+
+**Country names from the live scrape don't always match this dashboard's
+static lat/lon table** (e.g. the site's "United States of America" vs. the
+dashboard's "United States", or the full "Hong Kong Special Administrative
+Region of the People's Republic of China" vs. "Hong Kong SAR"). `app.py`
+normalizes these via `API_TO_STATIC_COUNTRY_NAME` /
+`STATIC_TO_API_COUNTRY_NAME`. If the live sidebar warns that a country "has
+no plotted coordinates yet," check whether it's a new unmapped name variant
+before assuming the country is actually new to AFUGN.
+
+If `api.py` is unreachable (checked via `/meta`), the dashboard falls back
+to its static snapshot values and shows a warning in the sidebar rather than
+failing — see `merge_live_country_data`/`merge_live_regional_data` in
+`app.py`.
