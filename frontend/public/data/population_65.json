@@ -1,0 +1,90 @@
+{
+  "United States": {
+    "pop65": 62844750,
+    "perMillionSeniors": 1.671
+  },
+  "Canada": {
+    "pop65": 8438778,
+    "perMillionSeniors": 1.422
+  },
+  "Ireland": {
+    "pop65": 888912,
+    "perMillionSeniors": 10.125
+  },
+  "United Kingdom": {
+    "pop65": 13690810,
+    "perMillionSeniors": 0.146
+  },
+  "Portugal": {
+    "pop65": 2695018,
+    "perMillionSeniors": 0.742
+  },
+  "Spain": {
+    "pop65": 10681480,
+    "perMillionSeniors": 0.187
+  },
+  "Croatia": {
+    "pop65": 915154,
+    "perMillionSeniors": 1.093
+  },
+  "Czech Republic": {
+    "pop65": 2305849,
+    "perMillionSeniors": 0.434
+  },
+  "Hungary": {
+    "pop65": 2012974,
+    "perMillionSeniors": 0.497
+  },
+  "Israel": {
+    "pop65": 1284748,
+    "perMillionSeniors": 0.778
+  },
+  "Slovakia": {
+    "pop65": 1030590,
+    "perMillionSeniors": 0.97
+  },
+  "Slovenia": {
+    "pop65": 473316,
+    "perMillionSeniors": 2.113
+  },
+  "Switzerland": {
+    "pop65": 1857777,
+    "perMillionSeniors": 0.538
+  },
+  "South Korea": {
+    "pop65": 10507688,
+    "perMillionSeniors": 0.286
+  },
+  "China": {
+    "pop65": 209741958,
+    "perMillionSeniors": 0.005
+  },
+  "Philippines": {
+    "pop65": 6684893,
+    "perMillionSeniors": 0.15
+  },
+  "Hong Kong SAR": {
+    "pop65": 1774789,
+    "perMillionSeniors": 0.563
+  },
+  "Australia": {
+    "pop65": 4996279,
+    "perMillionSeniors": 0.4
+  },
+  "Brazil": {
+    "pop65": 24431586,
+    "perMillionSeniors": 0.123
+  },
+  "Chile": {
+    "pop65": 2897512,
+    "perMillionSeniors": 0.69
+  },
+  "Turkey": {
+    "pop65": 9078171,
+    "perMillionSeniors": 0.11
+  },
+  "Mexico": {
+    "pop65": 9831957,
+    "perMillionSeniors": 0.102
+  }
+}

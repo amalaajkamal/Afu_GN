@@ -29,6 +29,10 @@ directory, scraped from https://www.afugn.org/afugn-members. Two pieces:
   OpenStreetMap Nominatim search API (no key required) so newly-added AFUGN
   members get plotted automatically instead of needing a hardcoded
   coordinate table; see "Institution geocoding" below.
+- `frontend/` — a second, independent React dashboard (Vite + TypeScript +
+  Tailwind) covering the same five views as `app.py`. It's additive, not a
+  replacement: `app.py` is unmodified and keeps running as before. See "New
+  frontend (`frontend/`)" below.
 
 ## Commands
 
@@ -42,6 +46,13 @@ uvicorn api:app --reload --port 8000
 # Run the Streamlit dashboard
 streamlit run app.py
 
+# Run the new React frontend (separate terminal, alongside the API above)
+cd frontend
+npm install
+npm run dev              # -> http://localhost:5173
+npm run build             # production build to frontend/dist/
+node scripts/sync-static-data.mjs   # re-sync static JSON after CSVs change
+
 # Run the scraper standalone, dumps JSON to stdout
 
 python scraper.py                 # all regions
@@ -53,7 +64,10 @@ python scraper.py Asia Europe     # only specific regions (keys of REGION_ENTRY_
 python inspect_page.py <url>
 ```
 
-There is no test suite, linter, or build step configured in this repo.
+There is no test suite, linter, or build step configured for the Python side
+of this repo. `frontend/` is a normal Vite/TypeScript project and does have
+a build step (`npm run build`, type-checked via `tsc -b`) — see "New
+frontend (`frontend/`)" below.
 
 ## Architecture
 
@@ -181,6 +195,19 @@ the next time `api.py` scrapes.
   all and fall back to `STATIC_INSTITUTIONS` (name-only, no coordinates); see
   below.
 
+### India map boundary (`india_outline.geojson`)
+
+Any map of India rendered in `app.py` (or any future visualization code)
+**must show India's external boundary exactly as per the Indian Constitution
+and the Government of India** — this includes the full Union Territories of
+Jammu & Kashmir and Ladakh as integral parts of India. Plotly's bundled world
+atlas draws this boundary incorrectly, so `load_india_geojson()` overlays the
+correct outline from `india_outline.geojson` on top of the base map (see the
+`india_geojson` usage in the choropleth/scatter map sections). Do not revert
+to Plotly's default/bundled India outline, and if `india_outline.geojson` is
+ever regenerated or replaced, verify the replacement still matches the
+official Government of India boundary before committing it.
+
 ### Dashboard ↔ API integration (`app.py` + `api_client.py`)
 
 `app.py` calls `api.py` (default `http://127.0.0.1:8000`, override via
@@ -208,3 +235,53 @@ If `api.py` is unreachable (checked via `/meta`), the dashboard falls back
 to its static snapshot values and shows a warning in the sidebar rather than
 failing — see `merge_live_country_data`/`merge_live_regional_data` in
 `app.py`.
+
+### New frontend (`frontend/`)
+
+A second, independently-built dashboard covering the same five views as
+`app.py` (Global Overview, Principle Gap Analysis, Regional Equity, Best
+Practices Explorer, Impact Map), built with React + TypeScript + Vite +
+Tailwind CSS instead of Streamlit. It is purely additive: nothing in
+`app.py`, `api.py`, `api_client.py`, `scraper.py`, or `geocode.py` is
+modified or depended on for its own logic beyond reading `api.py`'s HTTP
+endpoints. Both frontends can run side by side indefinitely. The full design
+plan (palette, typography, component inventory, page-by-page parity notes)
+lives in `NEW_FRONTEND_PLAN.md` at the repo root.
+
+- **Theming**: light/dark mode via a `.dark` class on `<html>` (toggle in
+  the top bar, persisted to `localStorage`, defaults to
+  `prefers-color-scheme`). All color tokens are defined as CSS custom
+  properties in `frontend/src/index.css` (`:root` = light, `.dark` =
+  dark) — a Claude-styled pastel-terracotta palette with WCAG AA-checked
+  text contrast. Chart/map code can't read CSS variables, so the same
+  palette is duplicated as literal hex in `frontend/src/lib/mapTheme.ts`;
+  keep the two in sync if the palette ever changes. `mapTheme.ts` also
+  carries darker "ink" variants of every accent (`regionColorsInk`) for use
+  as a solid fill behind white/inverse text (nav active states, region
+  tabs) — the plain accent tokens are reserved for large graphical marks
+  (chart bars, donut slices, map pins) where the lighter WCAG "non-text"
+  3:1 threshold applies instead of 4.5:1.
+- **Data layer** (see `NEW_FRONTEND_PLAN.md` §5 for the full rationale):
+  - *Live*: institution/region/country/geocoded-coordinate data is fetched
+    directly from the running `api.py` (`frontend/src/lib/apiClient.ts`,
+    `VITE_API_BASE_URL` env var, default `http://127.0.0.1:8000`), cached
+    client-side with React Query (`frontend/src/hooks/useApi.ts`,
+    `useDashboardData.ts`, `useInstitutions.ts` — the last two port
+    `app.py`'s `merge_live_country_data`/`institution_points()` logic to
+    TypeScript).
+  - *Static*: the AFU principles table, Best Practices CSV, population-65+
+    figures, and `india_outline.geojson` are served as plain files from
+    `frontend/public/data/`, generated by
+    `frontend/scripts/sync-static-data.mjs` from the repo-root
+    CSVs/geojson. That script only reads the repo-root files — re-run it
+    manually (`node scripts/sync-static-data.mjs` from `frontend/`)
+    whenever those source CSVs change; nothing regenerates it
+    automatically.
+- **India map boundary**: `frontend/public/data/india_outline.geojson` is a
+  direct copy of the repo-root `india_outline.geojson` — the same rule in
+  "India map boundary" above applies here too. Don't hand-edit the copy;
+  re-run the sync script instead.
+- If `api.py` is unreachable, hooks fall back to
+  `frontend/public/data/static_country_snapshot.json` (a JSON port of
+  `app.py`'s `STATIC_INSTITUTIONS`/`load_static_country_data()`), mirroring
+  `app.py`'s own fallback behavior.
