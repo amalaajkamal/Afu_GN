@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+@import "@fontsource-variable/lexend";
+@import "@fontsource/atkinson-hyperlegible-next/400.css";
+@import "@fontsource/atkinson-hyperlegible-next/400-italic.css";
+@import "@fontsource/atkinson-hyperlegible-next/500.css";
+@import "@fontsource/atkinson-hyperlegible-next/600.css";
+@import "@fontsource/atkinson-hyperlegible-next/700.css";
+@import "@fontsource/atkinson-hyperlegible-next/800.css";
+
+/* Tailwind v4: toggle dark mode via a `.dark` class on <html> (set by ThemeProvider) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-body: "Atkinson Hyperlegible Next", "Lexend Variable", system-ui, sans-serif;
+  --font-heading: "Lexend Variable", "Atkinson Hyperlegible Next", system-ui, sans-serif;
+
+  --color-terracotta: #d97757;
+  --color-terracotta-soft: #f3d9cb;
+  --color-clay: #c97b63;
+  --color-sage: #8fa888;
+  --color-amber: #e0a458;
+  --color-rose: #c96a6a;
+  --color-ocean: #6e97a8;
+
+  --color-region-na: #d97757;
+  --color-region-europe: #6e8fa8;
+  --color-region-asia: #e0a458;
+  --color-region-oceania: #a487a0;
+  --color-region-samerica: #6ea89a;
+
+  /* "ink" = WCAG AA-safe (>=4.5:1) darkened variants of the accents above,
+     for use as text or as a solid fill behind white text. The plain accent
+     tokens above stay at their lighter pastel value for large graphical
+     marks (chart bars/donut slices/map pins), which only need 3:1. */
+  --color-ink-terracotta: #a34425;
+  --color-ink-clay: #994c35;
+  --color-ink-sage: #52674c;
+  --color-ink-amber: #885719;
+  --color-ink-rose: #a93d3d;
+  --color-ink-ocean: #466774;
+}
+
+/* ── Light (default) design tokens ─────────────────────────────────────── */
+:root {
+  --bg: #faf6f1;
+  --surface: #ffffff;
+  --surface-muted: #f3eae1;
+  --surface-raised: #ffffff;
+  --border: #e8dcce;
+  --text-primary: #2a2119;
+  --text-secondary: #6b5d4f;
+  --text-inverse: #faf6f1;
+  --focus-ring: #d97757;
+  --shadow-color: 34 25 15;
+}
+
+/* ── Dark tokens ────────────────────────────────────────────────────────── */
+.dark {
+  --bg: #211d1a;
+  --surface: #2b2521;
+  --surface-muted: #332c27;
+  --surface-raised: #362f2a;
+  --border: #40372f;
+  --text-primary: #f3eae1;
+  --text-secondary: #b8a996;
+  --text-inverse: #2a2119;
+  --focus-ring: #e38a68;
+  --shadow-color: 0 0 0;
+
+  --color-terracotta: #e38a68;
+  --color-terracotta-soft: #4a3226;
+  --color-clay: #d98f76;
+  --color-sage: #7e9c77;
+  --color-amber: #e3b06b;
+  --color-rose: #d97f7f;
+  --color-ocean: #7fa9ba;
+
+  --color-region-na: #e38a68;
+  --color-region-europe: #7fa9ba;
+  --color-region-asia: #e3b06b;
+  --color-region-oceania: #b79bb2;
+  --color-region-samerica: #7fbaac;
+
+  /* Dark mode's base accents already clear 4.5:1 against dark surfaces, so
+     "ink" text variants reuse them as-is instead of darkening further. */
+  --color-ink-terracotta: #e38a68;
+  --color-ink-clay: #d98f76;
+  --color-ink-sage: #7e9c77;
+  --color-ink-amber: #e3b06b;
+  --color-ink-rose: #d97f7f;
+  --color-ink-ocean: #7fa9ba;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-inverse: var(--text-inverse);
+  --color-focus-ring: var(--focus-ring);
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--color-terracotta-soft);
+  color: var(--text-primary);
+}
+
+/* tabular numerals for KPI figures */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

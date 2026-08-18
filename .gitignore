@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.env
+geocode_cache.json
+research_cache.json

@@ -1,0 +1,390 @@
+{
+  "countries": [
+    {
+      "country": "United States",
+      "region": "North America",
+      "afuMembers": 105,
+      "latitude": 37.09,
+      "longitude": -95.71
+    },
+    {
+      "country": "Canada",
+      "region": "North America",
+      "afuMembers": 12,
+      "latitude": 56.13,
+      "longitude": -106.35
+    },
+    {
+      "country": "Mexico",
+      "region": "North America",
+      "afuMembers": 1,
+      "latitude": 23.63,
+      "longitude": -102.55
+    },
+    {
+      "country": "Ireland",
+      "region": "Europe",
+      "afuMembers": 9,
+      "latitude": 53.41,
+      "longitude": -8.24
+    },
+    {
+      "country": "United Kingdom",
+      "region": "Europe",
+      "afuMembers": 2,
+      "latitude": 55.37,
+      "longitude": -3.43
+    },
+    {
+      "country": "Portugal",
+      "region": "Europe",
+      "afuMembers": 2,
+      "latitude": 39.39,
+      "longitude": -8.22
+    },
+    {
+      "country": "Spain",
+      "region": "Europe",
+      "afuMembers": 2,
+      "latitude": 40.46,
+      "longitude": -3.74
+    },
+    {
+      "country": "Croatia",
+      "region": "Europe",
+      "afuMembers": 1,
+      "latitude": 45.1,
+      "longitude": 15.2
+    },
+    {
+      "country": "Czech Republic",
+      "region": "Europe",
+      "afuMembers": 1,
+      "latitude": 49.81,
+      "longitude": 15.47
+    },
+    {
+      "country": "Hungary",
+      "region": "Europe",
+      "afuMembers": 1,
+      "latitude": 47.16,
+      "longitude": 19.5
+    },
+    {
+      "country": "Israel",
+      "region": "Europe",
+      "afuMembers": 1,
+      "latitude": 31.04,
+      "longitude": 34.85
+    },
+    {
+      "country": "Slovakia",
+      "region": "Europe",
+      "afuMembers": 1,
+      "latitude": 48.66,
+      "longitude": 19.69
+    },
+    {
+      "country": "Slovenia",
+      "region": "Europe",
+      "afuMembers": 1,
+      "latitude": 46.15,
+      "longitude": 14.99
+    },
+    {
+      "country": "Switzerland",
+      "region": "Europe",
+      "afuMembers": 1,
+      "latitude": 46.81,
+      "longitude": 8.22
+    },
+    {
+      "country": "South Korea",
+      "region": "Asia",
+      "afuMembers": 3,
+      "latitude": 35.9,
+      "longitude": 127.76
+    },
+    {
+      "country": "Turkey",
+      "region": "Asia",
+      "afuMembers": 1,
+      "latitude": 39.92,
+      "longitude": 32.85
+    },
+    {
+      "country": "China",
+      "region": "Asia",
+      "afuMembers": 1,
+      "latitude": 35.86,
+      "longitude": 104.19
+    },
+    {
+      "country": "Philippines",
+      "region": "Asia",
+      "afuMembers": 1,
+      "latitude": 12.87,
+      "longitude": 121.77
+    },
+    {
+      "country": "Hong Kong SAR",
+      "region": "Asia",
+      "afuMembers": 1,
+      "latitude": 22.39,
+      "longitude": 114.1
+    },
+    {
+      "country": "Australia",
+      "region": "Oceania",
+      "afuMembers": 2,
+      "latitude": -25.27,
+      "longitude": 133.77
+    },
+    {
+      "country": "Brazil",
+      "region": "South America",
+      "afuMembers": 3,
+      "latitude": -14.23,
+      "longitude": -51.92
+    },
+    {
+      "country": "Chile",
+      "region": "South America",
+      "afuMembers": 2,
+      "latitude": -35.67,
+      "longitude": -71.54
+    }
+  ],
+  "regions": [
+    {
+      "region": "North America",
+      "countriesInAfu": 3,
+      "totalCountries": 23,
+      "afuInstitutions": 118
+    },
+    {
+      "region": "Europe",
+      "countriesInAfu": 13,
+      "totalCountries": 44,
+      "afuInstitutions": 22
+    },
+    {
+      "region": "Asia",
+      "countriesInAfu": 5,
+      "totalCountries": 48,
+      "afuInstitutions": 7
+    },
+    {
+      "region": "Oceania",
+      "countriesInAfu": 1,
+      "totalCountries": 14,
+      "afuInstitutions": 2
+    },
+    {
+      "region": "South America",
+      "countriesInAfu": 2,
+      "totalCountries": 12,
+      "afuInstitutions": 5
+    }
+  ],
+  "institutionsByCountry": {
+    "United States": [
+      "University of Minnesota",
+      "University of Massachusetts Boston",
+      "Arizona State University",
+      "Duke University",
+      "Rochester Institute of Technology",
+      "University of North Carolina Wilmington",
+      "University of Michigan",
+      "Middle Tennessee State University",
+      "University of South Florida",
+      "University of New Hampshire",
+      "University of Arizona",
+      "California State University San Bernardino",
+      "California State University Fullerton",
+      "California State University Long Beach",
+      "Dominican University of California",
+      "Fielding Graduate University",
+      "Los Angeles Pierce College",
+      "Palo Alto University",
+      "San Diego State University",
+      "Santa Monica College",
+      "UCLA",
+      "UC Berkeley",
+      "University of San Francisco",
+      "University of Southern California",
+      "University of the Pacific",
+      "Colorado State University",
+      "University of Colorado Denver",
+      "University of Colorado Anschutz",
+      "University of Colorado Colorado Springs",
+      "Central Connecticut State University",
+      "Goodwin University",
+      "Quinnipiac University",
+      "University of Bridgeport",
+      "University of Connecticut",
+      "University of Hartford",
+      "Florida Atlantic University",
+      "Florida State University",
+      "Eckerd College",
+      "St. Thomas University",
+      "Georgia State University",
+      "University of North Georgia",
+      "University of Hawaii at Manoa",
+      "Northeastern Illinois University",
+      "University of Illinois Urbana-Champaign",
+      "Concordia University Chicago",
+      "Purdue University",
+      "University of Indianapolis",
+      "Wichita State University",
+      "Frontier Nursing University",
+      "Northern Kentucky University",
+      "Western Kentucky University",
+      "Franciscan Missionaries of Our Lady University",
+      "University of Maine",
+      "University of New England",
+      "Towson University",
+      "University of Maryland Baltimore",
+      "University of Maryland Baltimore County",
+      "Lasell University",
+      "UMass Amherst",
+      "UMass Dartmouth",
+      "UMass Lowell",
+      "UMass Medical School",
+      "Springfield College",
+      "William James College",
+      "Eastern Michigan University",
+      "Michigan State University",
+      "Wayne State University",
+      "University of Minnesota Duluth",
+      "University of St Thomas",
+      "St Catherine University",
+      "St Cloud State University",
+      "Mississippi State University",
+      "University of Mississippi",
+      "Missouri State University",
+      "Washington University in St Louis",
+      "University of Montana",
+      "University of Nebraska at Omaha",
+      "Fairleigh Dickinson University",
+      "Stockton University",
+      "Hofstra University",
+      "Hunter College CUNY",
+      "Ithaca College",
+      "Purchase College SUNY",
+      "Cleveland State University",
+      "Miami University",
+      "University of Akron",
+      "University of Cincinnati",
+      "University of Central Oklahoma",
+      "Portland State University",
+      "Southern Oregon University",
+      "Western Oregon University",
+      "Drexel University",
+      "Pennsylvania State University",
+      "University of Rhode Island",
+      "East Tennessee State University",
+      "Tennessee State University",
+      "University of Texas at Austin",
+      "University of Utah",
+      "University of Vermont",
+      "Virginia Commonwealth University",
+      "Shepherd University",
+      "West Virginia University",
+      "University of Wisconsin La Crosse",
+      "University of Wisconsin Green Bay",
+      "University of Wisconsin Superior"
+    ],
+    "Canada": [
+      "University of Calgary",
+      "Kwantlen Polytechnic University",
+      "University of British Columbia",
+      "UBC Okanagan",
+      "University of the Fraser Valley",
+      "Niagara College",
+      "McMaster University",
+      "Toronto Metropolitan University",
+      "Trent University",
+      "Ontario Tech University (UOIT)",
+      "University of Windsor",
+      "University of Manitoba"
+    ],
+    "Mexico": [
+      "ITESO, Universidad Jesuita de Guadalajara"
+    ],
+    "Ireland": [
+      "Atlantic Technological University",
+      "Dublin City University",
+      "Mary Immaculate College",
+      "Munster Technological University",
+      "National College of Ireland",
+      "Royal College of Surgeons Ireland",
+      "Trinity College Dublin",
+      "University College Dublin",
+      "University of Limerick"
+    ],
+    "United Kingdom": [
+      "University of Strathclyde",
+      "Ulster University"
+    ],
+    "Portugal": [
+      "ISEG — Lisbon School of Economics",
+      "Escola Superior de Saude de Santa Maria"
+    ],
+    "Spain": [
+      "University of Murcia",
+      "Universitat Internacional de Catalunya"
+    ],
+    "Croatia": [
+      "University of Rijeka"
+    ],
+    "Czech Republic": [
+      "Masaryk University"
+    ],
+    "Hungary": [
+      "John von Neumann University"
+    ],
+    "Israel": [
+      "University of Haifa"
+    ],
+    "Slovakia": [
+      "Comenius University Bratislava"
+    ],
+    "Slovenia": [
+      "University of Maribor"
+    ],
+    "Switzerland": [
+      "University of Zurich"
+    ],
+    "South Korea": [
+      "Chosun University",
+      "Paichai University",
+      "Yonsei University"
+    ],
+    "China": [
+      "Open University of China (Seniors University of China)"
+    ],
+    "Philippines": [
+      "University of the Philippines"
+    ],
+    "Hong Kong SAR": [
+      "Chinese University of Hong Kong"
+    ],
+    "Turkey": [
+      "Istanbul Nişantaşı University"
+    ],
+    "Australia": [
+      "University of Queensland",
+      "University of the Sunshine Coast"
+    ],
+    "Brazil": [
+      "Pontifical Catholic University of Campinas",
+      "Federal University of Technology Parana",
+      "Universidade Federal de Vicosa"
+    ],
+    "Chile": [
+      "Instituto Profesional AIEP",
+      "University of Talca"
+    ]
+  }
+}

@@ -1,10 +1,16 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+from streamlit_plotly_events import plotly_events
 import re
 import os
+import json
+import time
 from collections import Counter
+
+import api_client
 
 st.set_page_config(
     page_title="AFU Global Network Dashboard",
@@ -91,7 +97,7 @@ st.markdown("""
 
 # ── Data ───────────────────────────────────────────────────────────────────
 @st.cache_data
-def load_country_data():
+def load_static_country_data():
     return pd.DataFrame([
         ("United States","North America",105,37.09,-95.71),
         ("Canada","North America",12,56.13,-106.35),
@@ -118,7 +124,7 @@ def load_country_data():
     ], columns=["Country","Region","AFU_Members","Latitude","Longitude"])
 
 @st.cache_data
-def load_regional_data():
+def load_static_regional_data():
     return pd.DataFrame([
         ("North America",3,23,118),
         ("Europe",13,44,22),
@@ -126,6 +132,81 @@ def load_regional_data():
         ("Oceania",1,14,2),
         ("South America",2,12,5),
     ], columns=["Region","Countries_in_AFU","Total_Countries","AFU_Institutions"])
+
+
+# The live scraper picks up whatever country name AFUGN's site literally uses
+# (sometimes the formal/long form), which doesn't always match the shorter
+# display names used in this dashboard's static lat/lon table. Map the known
+# divergent API names to their static-table equivalents.
+API_TO_STATIC_COUNTRY_NAME = {
+    "United States of America": "United States",
+    "Hong Kong Special Administrative Region of the People's Republic of China": "Hong Kong SAR",
+}
+STATIC_TO_API_COUNTRY_NAME = {v: k for k, v in API_TO_STATIC_COUNTRY_NAME.items()}
+
+
+def load_live_country_country_counts():
+    """Fetch per-country institution counts from the API, normalized to this
+    dashboard's static country names. Returns (dict[country -> count], error)
+    -- error is None on success."""
+    payload, err = api_client.fetch_countries()
+    if err:
+        return None, err
+    raw_counts = payload.get("countries", {})
+    counts = {}
+    for name, count in raw_counts.items():
+        canonical = API_TO_STATIC_COUNTRY_NAME.get(name, name)
+        counts[canonical] = counts.get(canonical, 0) + count
+    return counts, None
+
+
+def load_live_region_counts():
+    payload, err = api_client.fetch_regions()
+    if err:
+        return None, err
+    return payload.get("regions", {}), None
+
+
+def load_live_countries_in_afu_by_region(regions):
+    """For each region name, count distinct countries the API currently has
+    at least one member in. Best-effort: a per-region fetch failure just
+    leaves that region out of the result (caller falls back to static)."""
+    result = {}
+    for region in regions:
+        payload, err = api_client.fetch_countries(region=region)
+        if err:
+            continue
+        canonical_names = {API_TO_STATIC_COUNTRY_NAME.get(n, n) for n in payload.get("countries", {})}
+        result[region] = len(canonical_names)
+    return result
+
+
+def merge_live_country_data(static_df, live_counts):
+    """Overlay live per-country counts onto the static lat/lon table.
+    Countries present live but missing static coordinates are reported back
+    (not plotted) rather than dropped silently or crashing."""
+    if not live_counts:
+        return static_df.copy(), []
+
+    df = static_df.copy()
+    static_names = set(df["Country"])
+    df["AFU_Members"] = df["Country"].map(live_counts).fillna(df["AFU_Members"]).astype(int)
+
+    uncoordinated = sorted(name for name in live_counts if name not in static_names)
+    return df, uncoordinated
+
+
+def merge_live_regional_data(static_df, live_region_counts, live_countries_in_afu):
+    """live_region_counts: dict[region -> institution count] from /members/regions.
+    live_countries_in_afu: dict[region -> count of distinct countries], derived
+    by calling /members/countries?region=<region> per region (the region-count
+    endpoint alone doesn't break countries out by region)."""
+    df = static_df.copy()
+    if live_region_counts:
+        df["AFU_Institutions"] = df["Region"].map(live_region_counts).fillna(df["AFU_Institutions"]).astype(int)
+    if live_countries_in_afu:
+        df["Countries_in_AFU"] = df["Region"].map(live_countries_in_afu).fillna(df["Countries_in_AFU"]).astype(int)
+    return df
 
 @st.cache_data
 def load_principles_data():
@@ -150,8 +231,20 @@ def load_best_practices():
     df.columns = [c.strip() for c in df.columns]
     return df
 
-# Institution list by country
-INSTITUTIONS = {
+@st.cache_data
+def load_india_geojson():
+    # Official external boundary of India (per the Indian constitution/government,
+    # includes the full Union Territories of Jammu & Kashmir and Ladakh), used to
+    # overlay a correct outline on top of Plotly's default base map -- whose
+    # bundled world atlas draws India's border incorrectly.
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    geojson_path = os.path.join(base_dir, "india_outline.geojson")
+    with open(geojson_path, encoding="utf-8") as f:
+        return json.load(f)
+
+# Static fallback institution list by country, used only when the live API
+# is unreachable.
+STATIC_INSTITUTIONS = {
     "United States": ["University of Minnesota","University of Massachusetts Boston","Arizona State University","Duke University","Rochester Institute of Technology","University of North Carolina Wilmington","University of Michigan","Middle Tennessee State University","University of South Florida","University of New Hampshire","University of Arizona","California State University San Bernardino","California State University Fullerton","California State University Long Beach","Dominican University of California","Fielding Graduate University","Los Angeles Pierce College","Palo Alto University","San Diego State University","Santa Monica College","UCLA","UC Berkeley","University of San Francisco","University of Southern California","University of the Pacific","Colorado State University","University of Colorado Denver","University of Colorado Anschutz","University of Colorado Colorado Springs","Central Connecticut State University","Goodwin University","Quinnipiac University","University of Bridgeport","University of Connecticut","University of Hartford","Florida Atlantic University","Florida State University","Eckerd College","St. Thomas University","Georgia State University","University of North Georgia","University of Hawaii at Manoa","Northeastern Illinois University","University of Illinois Urbana-Champaign","Concordia University Chicago","Purdue University","University of Indianapolis","Wichita State University","Frontier Nursing University","Northern Kentucky University","Western Kentucky University","Franciscan Missionaries of Our Lady University","University of Maine","University of New England","Towson University","University of Maryland Baltimore","University of Maryland Baltimore County","Lasell University","UMass Amherst","UMass Dartmouth","UMass Lowell","UMass Medical School","Springfield College","William James College","Eastern Michigan University","Michigan State University","Wayne State University","University of Minnesota Duluth","University of St Thomas","St Catherine University","St Cloud State University","Mississippi State University","University of Mississippi","Missouri State University","Washington University in St Louis","University of Montana","University of Nebraska at Omaha","Fairleigh Dickinson University","Stockton University","Hofstra University","Hunter College CUNY","Ithaca College","Purchase College SUNY","Cleveland State University","Miami University","University of Akron","University of Cincinnati","University of Central Oklahoma","Portland State University","Southern Oregon University","Western Oregon University","Drexel University","Pennsylvania State University","University of Rhode Island","East Tennessee State University","Tennessee State University","University of Texas at Austin","University of Utah","University of Vermont","Virginia Commonwealth University","Shepherd University","West Virginia University","University of Wisconsin La Crosse","University of Wisconsin Green Bay","University of Wisconsin Superior"],
     "Canada": ["University of Calgary","Kwantlen Polytechnic University","University of British Columbia","UBC Okanagan","University of the Fraser Valley","Niagara College","McMaster University","Toronto Metropolitan University","Trent University","Ontario Tech University (UOIT)","University of Windsor","University of Manitoba"],
     "Mexico": ["ITESO, Universidad Jesuita de Guadalajara"],
@@ -176,6 +269,52 @@ INSTITUTIONS = {
     "Chile": ["Instituto Profesional AIEP","University of Talca"],
 }
 
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_institutions_for_country(country):
+    """Live institution list (name + url) for a country, falling back to the
+    static name-only list if the API is unavailable or has nothing for it."""
+    api_country_name = STATIC_TO_API_COUNTRY_NAME.get(country, country)
+    payload, err = api_client.fetch_members(country=api_country_name)
+    if not err and payload.get("results"):
+        return [
+            {
+                "name": m["name"],
+                "url": m.get("url"),
+                "latitude": m.get("latitude"),
+                "longitude": m.get("longitude"),
+            }
+            for m in payload["results"]
+        ]
+    return [{"name": name, "url": None, "latitude": None, "longitude": None} for name in STATIC_INSTITUTIONS.get(country, [])]
+
+
+def institution_points(df_countries, jitter_deg=0.55):
+    """Expand country-level rows into one point per institution. Institutions
+    the API has real geocoded coordinates for (see geocode.py) are plotted at
+    their actual location; any without one yet (geocoding miss, or the static
+    fallback list when the API is unreachable) fall back to a jittered point
+    around the country's centroid so the map still shows a marker for them."""
+    rows = []
+    for _, r in df_countries.iterrows():
+        insts = get_institutions_for_country(r["Country"])
+        n = int(r["AFU_Members"])
+        for i in range(n):
+            inst = insts[i] if i < len(insts) else {"name": f"{r['Country']} institution {i+1}"}
+            lat, lon = inst.get("latitude"), inst.get("longitude")
+            if lat is None or lon is None:
+                rng = np.random.default_rng(abs(hash((r["Country"], i))) % (2**32))
+                lat = r["Latitude"] + rng.uniform(-jitter_deg, jitter_deg)
+                lon = r["Longitude"] + rng.uniform(-jitter_deg, jitter_deg)
+            rows.append({
+                "Institution": inst["name"],
+                "Country": r["Country"],
+                "Region": r["Region"],
+                "Latitude": lat,
+                "Longitude": lon,
+            })
+    return pd.DataFrame(rows, columns=["Institution", "Country", "Region", "Latitude", "Longitude"])
+
 REGION_COLORS = {
     "North America": "#E63946",
     "Europe": "#2196F3",
@@ -195,6 +334,42 @@ if "selected_region" not in st.session_state:
 if "selected_country" not in st.session_state:
     st.session_state.selected_country = None
 
+# ── Live API data ──────────────────────────────────────────────────────────
+meta, meta_err = api_client.fetch_meta()
+live_region_counts, _ = load_live_region_counts()
+live_country_counts, _ = load_live_country_country_counts()
+api_live = meta_err is None and meta is not None and meta.get("total_institutions", 0) > 0
+
+if api_live:
+    live_countries_in_afu = load_live_countries_in_afu_by_region(sorted(REGION_COLORS.keys()))
+else:
+    live_countries_in_afu = {}
+
+df_country, uncoordinated_countries = merge_live_country_data(
+    load_static_country_data(), live_country_counts if api_live else None
+)
+df_regional = merge_live_regional_data(
+    load_static_regional_data(),
+    live_region_counts if api_live else None,
+    live_countries_in_afu,
+)
+df_regional["Countries_Missing"] = df_regional["Total_Countries"] - df_regional["Countries_in_AFU"]
+df_regional["Country_Coverage_Pct"] = (df_regional["Countries_in_AFU"] / df_regional["Total_Countries"] * 100).round(1)
+
+live_total_institutions = meta.get("total_institutions") if api_live else None
+live_total_countries = len(live_country_counts) if api_live and live_country_counts else None
+
+total_institutions_kpi = (
+    live_total_institutions if live_total_institutions is not None
+    else int(df_regional["AFU_Institutions"].sum())
+)
+countries_kpi = (
+    live_total_countries if live_total_countries is not None
+    else int(df_regional["Countries_in_AFU"].sum())
+)
+na_members_kpi = int(df_regional.loc[df_regional["Region"] == "North America", "AFU_Institutions"].sum())
+na_share_pct_kpi = round(na_members_kpi / total_institutions_kpi * 100) if total_institutions_kpi else 0
+
 # ── Sidebar ────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 🎓 AFU GN Dashboard")
@@ -206,15 +381,35 @@ with st.sidebar:
         "🌐 Impact Map",
     ])
     st.markdown("---")
+    st.markdown("**Live API status**")
+    if api_live:
+        scraped_at = meta.get("scraped_at")
+        age_str = "unknown"
+        if scraped_at:
+            age_min = int((time.time() - scraped_at) / 60)
+            age_str = f"{age_min} min ago" if age_min < 120 else f"{age_min // 60} hr ago"
+        st.success(f"🟢 Connected — {meta.get('total_institutions', 0)} institutions, updated {age_str}")
+        if st.button("🔄 Refresh live data", use_container_width=True):
+            _, refresh_err = api_client.trigger_refresh()
+            if refresh_err:
+                st.error(f"Refresh failed: {refresh_err}")
+            else:
+                api_client.clear_cache()
+                st.rerun()
+        if uncoordinated_countries:
+            with st.expander(f"⚠️ {len(uncoordinated_countries)} countries have no plotted coordinates yet"):
+                st.write(", ".join(uncoordinated_countries))
+    else:
+        st.warning("🔴 Live API unavailable — showing static snapshot")
+        st.caption(f"({meta_err or 'no data'}) Start it with:\n`uvicorn api:app --reload --port 8000`")
+    st.markdown("---")
     st.markdown("**Data Sources**")
-    st.markdown("- AFU GN Website (June 2026)\n- AFU Best Practices Database\n- World Bank SP.POP.65UP.TO (2025)\n- UN Population Division WPP 2025")
+    st.markdown(
+        "- AFU-API live service" + (" (connected)" if api_live else " (offline, static snapshot)")
+        + "\n- AFU Best Practices Database\n- World Bank SP.POP.65UP.TO (2025)\n- UN Population Division WPP 2025"
+    )
     st.markdown("---")
     st.caption("Paper: *Implementation Gap Analysis of the AFU Global Network*\nGenerations at Work, DCU, Oct 2026")
-
-df_country = load_country_data()
-df_regional = load_regional_data()
-df_regional["Countries_Missing"] = df_regional["Total_Countries"] - df_regional["Countries_in_AFU"]
-df_regional["Country_Coverage_Pct"] = (df_regional["Countries_in_AFU"] / df_regional["Total_Countries"] * 100).round(1)
 df_principles = load_principles_data()
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -233,18 +428,18 @@ if page == "🌍 Global Overview":
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("""
+    st.markdown(f"""
     <div style="display:flex; gap:8px; margin:6px 0;">
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:8px 16px; flex:1; text-align:center; border-top:2px solid #4FC3F7;">
-            <div style="color:#4FC3F7; font-size:1.5rem; font-weight:800;">154</div>
+            <div style="color:#4FC3F7; font-size:1.5rem; font-weight:800;">{total_institutions_kpi}</div>
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">Member Institutions</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:8px 16px; flex:1; text-align:center; border-top:2px solid #E63946;">
-            <div style="color:#E63946; font-size:1.5rem; font-weight:800;">77%</div>
+            <div style="color:#E63946; font-size:1.5rem; font-weight:800;">{na_share_pct_kpi}%</div>
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">North America Share</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:8px 16px; flex:1; text-align:center; border-top:2px solid #27AE60;">
-            <div style="color:#27AE60; font-size:1.5rem; font-weight:800;">22</div>
+            <div style="color:#27AE60; font-size:1.5rem; font-weight:800;">{countries_kpi}</div>
             <div style="color:#546E7A; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;">Countries</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:8px 16px; flex:1; text-align:center; border-top:2px solid #FF9800;">
@@ -266,12 +461,12 @@ if page == "🌍 Global Overview":
         st.session_state.ov_region = "Global View"
 
     region_tabs = {
-        "Global View":   (154, "#4FC3F7"),
-        "North America": (118, "#E63946"),
-        "Europe":        (22,  "#2196F3"),
-        "Asia":          (7,   "#FF9800"),
-        "South America": (5,   "#00BCD4"),
-        "Oceania":       (2,   "#9C27B0"),
+        "Global View":   (total_institutions_kpi, "#4FC3F7"),
+        "North America": (int(df_regional.loc[df_regional["Region"]=="North America","AFU_Institutions"].sum()), "#E63946"),
+        "Europe":        (int(df_regional.loc[df_regional["Region"]=="Europe","AFU_Institutions"].sum()),  "#2196F3"),
+        "Asia":          (int(df_regional.loc[df_regional["Region"]=="Asia","AFU_Institutions"].sum()),   "#FF9800"),
+        "South America": (int(df_regional.loc[df_regional["Region"]=="South America","AFU_Institutions"].sum()), "#00BCD4"),
+        "Oceania":       (int(df_regional.loc[df_regional["Region"]=="Oceania","AFU_Institutions"].sum()), "#9C27B0"),
     }
 
     sel = st.session_state.ov_region
@@ -283,7 +478,26 @@ if page == "🌍 Global Overview":
         map_df = df_country.copy()
         map_df["opacity"] = map_df["Region"].apply(lambda x: 1.0 if x == sel else 0.12)
 
+    # Dark theme colors per region
+    region_themes = {
+        "Global View":   {"land": "#1a1a2e", "ocean": "#050d1a", "coast": "#2a2a4a", "country": "#2a2a4a", "bg": "#050d1a"},
+        "North America": {"land": "#0f3460", "ocean": "#050d1a", "coast": "#E63946", "country": "#533483", "bg": "#050d1a"},
+        "Europe":        {"land": "#16213e", "ocean": "#050d1a", "coast": "#2196F3", "country": "#1a3a6e", "bg": "#050d1a"},
+        "Asia":          {"land": "#2d1b00", "ocean": "#050d1a", "coast": "#FF9800", "country": "#4a2e00", "bg": "#050d1a"},
+        "South America": {"land": "#001a2e", "ocean": "#050d1a", "coast": "#00BCD4", "country": "#003a4e", "bg": "#050d1a"},
+        "Oceania":       {"land": "#1a0a2e", "ocean": "#050d1a", "coast": "#9C27B0", "country": "#2e0a4e", "bg": "#050d1a"},
+    }
+    theme = region_themes.get(sel, region_themes["Global View"])
+
     fig_ov = go.Figure()
+
+    india_geojson = load_india_geojson()
+    fig_ov.add_trace(go.Choropleth(
+        geojson=india_geojson, locations=["India"], featureidkey="properties.name",
+        z=[1], colorscale=[[0, theme["land"]], [1, theme["land"]]],
+        showscale=False, marker_line_color=theme["country"], marker_line_width=0.6,
+        hoverinfo="skip", showlegend=False, zmin=0, zmax=1,
+    ))
 
     for region in df_country["Region"].unique():
         rdf = map_df[map_df["Region"] == region]
@@ -311,6 +525,21 @@ if page == "🌍 Global Overview":
             hovertemplate="<b>%{customdata[0]}</b><br>AFU Members: %{customdata[1]}<extra></extra>",
         ))
 
+    if sel == "Global View":
+        pins = institution_points(df_country)
+        pin_line_colors = pins["Region"].map(REGION_COLORS).fillna("#888").tolist()
+    else:
+        pins = institution_points(df_country[df_country["Region"] == sel])
+        pin_line_colors = REGION_COLORS.get(sel, "#888")
+    fig_ov.add_trace(go.Scattergeo(
+        lat=pins["Latitude"], lon=pins["Longitude"],
+        mode="markers", showlegend=False,
+        marker=dict(size=4, color="#ffffff", opacity=0.9,
+                    line=dict(width=1, color=pin_line_colors)),
+        customdata=pins[["Institution", "Country"]].values,
+        hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]}<extra></extra>",
+    ))
+
     region_bounds = {
         "Global View":   {"lat": [-55, 80],  "lon": [-170, 180]},
         "North America": {"lat": [15, 75],   "lon": [-170, -50]},
@@ -320,17 +549,6 @@ if page == "🌍 Global Overview":
         "Oceania":       {"lat": [-50, 5],   "lon": [110, 180]},
     }
     bounds = region_bounds.get(sel, region_bounds["Global View"])
-
-    # Dark theme colors per region
-    region_themes = {
-        "Global View":   {"land": "#1a1a2e", "ocean": "#050d1a", "coast": "#2a2a4a", "country": "#2a2a4a", "bg": "#050d1a"},
-        "North America": {"land": "#0f3460", "ocean": "#050d1a", "coast": "#E63946", "country": "#533483", "bg": "#050d1a"},
-        "Europe":        {"land": "#16213e", "ocean": "#050d1a", "coast": "#2196F3", "country": "#1a3a6e", "bg": "#050d1a"},
-        "Asia":          {"land": "#2d1b00", "ocean": "#050d1a", "coast": "#FF9800", "country": "#4a2e00", "bg": "#050d1a"},
-        "South America": {"land": "#001a2e", "ocean": "#050d1a", "coast": "#00BCD4", "country": "#003a4e", "bg": "#050d1a"},
-        "Oceania":       {"land": "#1a0a2e", "ocean": "#050d1a", "coast": "#9C27B0", "country": "#2e0a4e", "bg": "#050d1a"},
-    }
-    theme = region_themes.get(sel, region_themes["Global View"])
 
     fig_ov.update_layout(
         height=460, margin=dict(l=0, r=0, t=0, b=0),
@@ -357,15 +575,47 @@ if page == "🌍 Global Overview":
     with map_col:
         st.plotly_chart(fig_ov, use_container_width=True, config={"displayModeBar": False})
 
-        # Region tabs below map
-        tab_cols = st.columns(len(region_tabs))
+        # Region tabs below map — compact pill buttons
+        st.markdown("""
+        <div class="ov-region-tabs-marker"></div>
+        <style>
+        div[data-testid="stVerticalBlock"]:has(> div .ov-region-tabs-marker)
+                div[data-testid="stHorizontalBlock"] {
+            gap: 0.4rem;
+        }
+        div[data-testid="stVerticalBlock"]:has(> div .ov-region-tabs-marker) button {
+            padding: 0.15rem 0.3rem !important;
+            min-height: 1.6rem !important;
+            height: 1.6rem !important;
+            font-size: 0.66rem !important;
+            font-weight: 600 !important;
+            border-radius: 999px !important;
+            line-height: 1 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+        div[data-testid="stVerticalBlock"]:has(> div .ov-region-tabs-marker) button p {
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        region_abbrev = {
+            "Global View": "All", "North America": "N.Amer", "Europe": "Europe",
+            "Asia": "Asia", "South America": "S.Amer", "Oceania": "Oceania",
+        }
+        tab_cols = st.columns(len(region_tabs), gap="small")
         for i, (region, (count, color)) in enumerate(region_tabs.items()):
             with tab_cols[i]:
                 is_active = st.session_state.ov_region == region
+                short = region_abbrev.get(region, region)
                 if st.button(
-                    f"{'🔵 ' if region=='Global View' else ''}{region}   {count}",
+                    f"{short} {count}",
                     key=f"ov_tab_{region}",
-                    use_container_width=True
+                    use_container_width=True,
+                    type="primary" if is_active else "secondary",
+                    help=region,
                 ):
                     st.session_state.ov_region = region
                     st.rerun()
@@ -391,16 +641,31 @@ if page == "🌍 Global Overview":
             pull=pull_vals,
             marker=dict(colors=colors, line=dict(color="#050d1a", width=2)),
             textinfo="percent+label",
-            textfont=dict(size=9, color="white"),
+            textposition="outside",
+            textfont=dict(size=9, color="#90A4AE"),
             hovertemplate="<b>%{label}</b><br>Institutions: %{value}<br>Share: %{percent}<extra></extra>",
         ))
         fig_donut.update_layout(
-            height=220, showlegend=False,
+            height=260, showlegend=False,
             paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
-            margin=dict(l=5, r=5, t=5, b=5),
+            margin=dict(l=45, r=45, t=30, b=30),
+            uniformtext=dict(minsize=8, mode="hide"),
             font=dict(color="#90A4AE"),
         )
-        st.plotly_chart(fig_donut, use_container_width=True, config={"displayModeBar": False})
+        # Plotly's own selection events don't fire for pie/donut slices, so
+        # use plotly_events (listens for the raw plotly_click event) to make
+        # tapping a slice zoom the map, same as the bar chart click does.
+        donut_clicks = plotly_events(
+            fig_donut, click_event=True, hover_event=False, select_event=False,
+            override_height=260, override_width="100%", key="donut_region_select",
+        )
+        if donut_clicks:
+            point_idx = donut_clicks[0].get("pointNumber")
+            if point_idx is not None and 0 <= point_idx < len(df_reg_highlight):
+                clicked_region = df_reg_highlight.iloc[point_idx]["Region"]
+                if clicked_region != sel:
+                    st.session_state.ov_region = clicked_region
+                    st.rerun()
 
         # Build highlighted bar — selected region bright, others faded
         st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:2px;">INSTITUTIONS PER REGION</div>', unsafe_allow_html=True)
@@ -418,18 +683,30 @@ if page == "🌍 Global Overview":
             marker=dict(color=bar_colors, line=dict(width=0)),
             text=df_bar["AFU_Institutions"],
             textposition="outside",
+            cliponaxis=False,
             textfont=dict(color="#90A4AE", size=10),
             hovertemplate="<b>%{y}</b><br>Institutions: %{x}<extra></extra>",
         ))
+        max_bar = float(df_bar["AFU_Institutions"].max()) if len(df_bar) else 0
         fig_bar.update_layout(
             height=230, showlegend=False,
             paper_bgcolor="#050d1a", plot_bgcolor="#050d1a",
-            xaxis=dict(title="", color="#37474F", gridcolor="#0d2137", showgrid=True),
+            xaxis=dict(title="", color="#37474F", gridcolor="#0d2137", showgrid=True,
+                       range=[0, max_bar * 1.2 if max_bar > 0 else 1]),
             yaxis=dict(title="", color="#90A4AE"),
             font=dict(color="#90A4AE"),
             margin=dict(l=5, r=40, t=5, b=5),
         )
-        st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
+        bar_event = st.plotly_chart(
+            fig_bar, use_container_width=True, config={"displayModeBar": False},
+            on_select="rerun", selection_mode="points", key="bar_region_select",
+        )
+        bar_points = bar_event.get("selection", {}).get("points", []) if bar_event else []
+        if bar_points:
+            clicked_region = bar_points[0].get("y")
+            if clicked_region and clicked_region != sel:
+                st.session_state.ov_region = clicked_region
+                st.rerun()
 
 # ══════════════════════════════════════════════════════════════════════════
 # PAGE 2 — PRINCIPLE GAP ANALYSIS
@@ -776,7 +1053,7 @@ elif page == "🌐 Impact Map":
     region_iso = {
         "North America": ["USA","CAN","MEX","GTM","BLZ","HND","SLV","NIC","CRI","PAN","CUB","JAM","HTI","DOM","TTO","BRB"],
         "Europe": ["IRL","GBR","PRT","ESP","HRV","CZE","HUN","ISR","SVK","SVN","CHE","FRA","DEU","ITA","NLD","BEL","AUT","POL","SWE","NOR","DNK","FIN","GRC","ROU","BGR","SRB","UKR","ALB","MKD","BIH","MNE","LTU","LVA","EST","LUX","MLT","CYP","ISL"],
-        "Asia": ["KOR","CHN","PHL","HKG","TUR","IND","JPN","IDN","MYS","THA","VNM","MMR","KHM","SGP","BGD","LKA","NPL","PAK","AFG","IRN","IRQ","SAU","ARE","QAT","KWT","BHR","OMN","YEM","SYR","LBN","JOR","ARM","AZE","GEO","KAZ","UZB","MNG"],
+        "Asia": ["KOR","CHN","PHL","HKG","TUR","JPN","IDN","MYS","THA","VNM","MMR","KHM","SGP","BGD","LKA","NPL","PAK","AFG","IRN","IRQ","SAU","ARE","QAT","KWT","BHR","OMN","YEM","SYR","LBN","JOR","ARM","AZE","GEO","KAZ","UZB","MNG"],
         "Oceania": ["AUS","NZL","PNG","FJI","SLB","VUT","WSM","TON"],
         "South America": ["BRA","CHL","ARG","COL","PER","VEN","ECU","BOL","PRY","URY","GUY","SUR"],
     }
@@ -786,6 +1063,15 @@ elif page == "🌐 Impact Map":
     }
 
     fig_impact = go.Figure()
+
+    india_geojson = load_india_geojson()
+    fig_impact.add_trace(go.Choropleth(
+        geojson=india_geojson, locations=["India"], featureidkey="properties.name",
+        z=[1], colorscale=[[0, "#1a2744"], [1, "#1a2744"]],
+        showscale=False, marker_line_color="#2e4a8a", marker_line_width=0.5,
+        hoverinfo="skip", showlegend=False, zmin=0, zmax=1,
+    ))
+
     if sel_region and sel_region in region_iso:
         sel_isos = region_iso[sel_region]
         hi_color = region_highlight_colors.get(sel_region, "#FFFFFF")
@@ -795,6 +1081,24 @@ elif page == "🌐 Impact Map":
             showscale=False, marker_line_color=hi_color, marker_line_width=1.2,
             hoverinfo="skip", showlegend=False, zmin=0, zmax=1,
         ))
+        if sel_region == "Asia":
+            # Pakistan/China above are highlighted using Plotly's default ISO-3
+            # boundaries, which draw their disputed claims over Kashmir/Aksai
+            # Chin -- redraw India's correct outline here with an OPAQUE mask
+            # (not just a border) so that stray line can't show through, then
+            # add the same highlight tint/border as the other Asia countries.
+            fig_impact.add_trace(go.Choropleth(
+                geojson=india_geojson, locations=["India"], featureidkey="properties.name",
+                z=[1], colorscale=[[0, "#1a2744"], [1, "#1a2744"]],
+                showscale=False, marker_line_color="#2e4a8a", marker_line_width=0.5,
+                hoverinfo="skip", showlegend=False, zmin=0, zmax=1,
+            ))
+            fig_impact.add_trace(go.Choropleth(
+                geojson=india_geojson, locations=["India"], featureidkey="properties.name",
+                z=[1], colorscale=[[0,"rgba(255,255,255,0.04)"],[1,"rgba(255,255,255,0.04)"]],
+                showscale=False, marker_line_color=hi_color, marker_line_width=1.2,
+                hoverinfo="skip", showlegend=False, zmin=0, zmax=1,
+            ))
 
     for region in df_country["Region"].unique():
         rdf = map_df[map_df["Region"]==region]
@@ -808,6 +1112,24 @@ elif page == "🌐 Impact Map":
             text=rdf["Country"],
             customdata=rdf[["AFU_Members"]].values,
             hovertemplate="<b>%{text}</b><br>AFU Members: %{customdata[0]}<extra></extra>",
+        ))
+
+    if sel_region:
+        pin_df = df_country[df_country["Region"] == sel_region]
+        if sel_country:
+            pin_df = pin_df[pin_df["Country"] == sel_country]
+        pins = institution_points(pin_df)
+        pin_line_colors = region_highlight_colors.get(sel_region, "#4FC3F7")
+    else:
+        pins = institution_points(df_country)
+        pin_line_colors = pins["Region"].map(region_highlight_colors).fillna("#4FC3F7").tolist()
+    fig_impact.add_trace(go.Scattergeo(
+        lat=pins["Latitude"], lon=pins["Longitude"],
+        mode="markers", showlegend=False,
+        marker=dict(size=4, color="#ffffff", opacity=0.9,
+                    line=dict(width=1, color=pin_line_colors)),
+        customdata=pins[["Institution", "Country"]].values,
+        hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]}<extra></extra>",
         ))
 
     fig_impact.update_layout(
@@ -861,13 +1183,13 @@ elif page == "🌐 Impact Map":
                 </div>
             </div>""", unsafe_allow_html=True)
         else:
-            st.markdown("""<div style="display:flex; gap:8px; margin-top:4px;">
+            st.markdown(f"""<div style="display:flex; gap:8px; margin-top:4px;">
                 <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:8px; flex:1; text-align:center;">
-                    <div style="color:#00d4ff; font-size:1.3rem; font-weight:800;">154</div>
+                    <div style="color:#00d4ff; font-size:1.3rem; font-weight:800;">{total_institutions_kpi}</div>
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">Institutions</div>
                 </div>
                 <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:8px; flex:1; text-align:center;">
-                    <div style="color:#27AE60; font-size:1.3rem; font-weight:800;">22</div>
+                    <div style="color:#27AE60; font-size:1.3rem; font-weight:800;">{countries_kpi}</div>
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">Countries</div>
                 </div>
                 <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:8px; flex:1; text-align:center;">
@@ -875,7 +1197,7 @@ elif page == "🌐 Impact Map":
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">Regions</div>
                 </div>
                 <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:8px; flex:1; text-align:center;">
-                    <div style="color:#E63946; font-size:1.3rem; font-weight:800;">77%</div>
+                    <div style="color:#E63946; font-size:1.3rem; font-weight:800;">{na_share_pct_kpi}%</div>
                     <div style="color:#8899bb; font-size:0.65rem; text-transform:uppercase;">N.America Share</div>
                 </div>
                 <div style="background:#0d1b2a; border:1px solid #2e4a8a; border-radius:8px; padding:8px; flex:1; text-align:center;">
@@ -889,7 +1211,14 @@ elif page == "🌐 Impact Map":
         with right_col:
             cdata2 = df_country[df_country["Country"]==sel_country].iloc[0]
             color2 = REGION_COLORS.get(cdata2["Region"], "#4FC3F7")
-            institutions2 = INSTITUTIONS.get(sel_country, [])
+            institutions2 = get_institutions_for_country(sel_country)
             st.markdown(f'<div style="color:{color2}; font-size:0.75rem; font-weight:700; margin-bottom:6px;">INSTITUTIONS ({len(institutions2)})</div>', unsafe_allow_html=True)
             for inst in institutions2:
-                st.markdown(f'<div style="background:#1a2744; border-left:3px solid {color2}; padding:5px 8px; margin:3px 0; border-radius:0 6px 6px 0; font-size:0.7rem; color:#cce4ff;">🎓 {inst}</div>', unsafe_allow_html=True)
+                if inst["url"]:
+                    label = (
+                        f'🎓 <a href="{inst["url"]}" target="_blank" rel="noopener" '
+                        f'style="color:#4FC3F7; text-decoration:underline;">{inst["name"]} 🔗</a>'
+                    )
+                else:
+                    label = f'🎓 {inst["name"]}'
+                st.markdown(f'<div style="background:#1a2744; border-left:3px solid {color2}; padding:5px 8px; margin:3px 0; border-radius:0 6px 6px 0; font-size:0.7rem; color:#cce4ff;">{label}</div>', unsafe_allow_html=True)
