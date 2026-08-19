@@ -1,6 +1,5 @@
 import { Compass } from "lucide-react";
 import { PageHeader } from "../components/layout/PageHeader";
-import { Callout } from "../components/cards/Callout";
 import { CoverageStackedBarChart } from "../components/charts/CoverageStackedBarChart";
 import { DensityBarChart } from "../components/charts/DensityBarChart";
 import type { DensityRow } from "../components/charts/DensityBarChart";
@@ -74,13 +73,6 @@ export function RegionalEquityPage() {
           ) : (
             <DensityBarChart rows={density} />
           )}
-          <div className="mt-4">
-            <Callout tone="info">
-              <strong>Ireland (10.13)</strong> leads due to the DCU founder effect.{" "}
-              <strong>China (0.005)</strong> — 209.74M seniors — is most underserved: a{" "}
-              <strong>2,000-fold gap</strong>.
-            </Callout>
-          </div>
         </div>
       </div>
     </div>
