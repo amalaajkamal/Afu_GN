@@ -29,8 +29,9 @@ export function PrincipleBarChart({ principles, height = 380 }: { principles: Pr
             <XAxis type="number" domain={[0, Math.ceil(maxPct * 1.15)]} hide />
             <YAxis
               type="category"
-              dataKey="shortLabel"
-              width={190}
+              dataKey="principleNumber"
+              tickFormatter={((v: number) => `P${v}`) as never}
+              width={40}
               tick={{ fill: theme.gridText, fontSize: 12 }}
               tickLine={false}
               axisLine={false}
