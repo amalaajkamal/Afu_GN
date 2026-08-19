@@ -30,6 +30,11 @@ const AboutUsPage = lazy(() =>
 const ResearchPage = lazy(() =>
   import("./pages/ResearchPage").then((m) => ({ default: m.ResearchPage })),
 );
+const SocialIsolationResearchPage = lazy(() =>
+  import("./pages/SocialIsolationResearchPage").then((m) => ({
+    default: m.SocialIsolationResearchPage,
+  })),
+);
 
 function PageFallback() {
   return <div className="h-96 animate-pulse rounded-xl bg-surface-muted" />;
@@ -84,6 +89,14 @@ function App() {
           element={
             <Suspense fallback={<PageFallback />}>
               <ResearchPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="research/social-isolation"
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <SocialIsolationResearchPage />
             </Suspense>
           }
         />

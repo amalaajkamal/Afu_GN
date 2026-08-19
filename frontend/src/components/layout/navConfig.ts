@@ -1,4 +1,13 @@
-import { BookOpenText, GraduationCap, LayoutGrid, Map, Ruler, Compass, Users } from "lucide-react";
+import {
+  BookOpenText,
+  GraduationCap,
+  HeartHandshake,
+  LayoutGrid,
+  Map,
+  Ruler,
+  Compass,
+  Users,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface NavItem {
@@ -20,5 +29,11 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { to: "/impact-map", label: "Impact Map", shortLabel: "Map", icon: Map },
   { to: "/research", label: "Research", shortLabel: "Research", icon: BookOpenText },
+  {
+    to: "/research/social-isolation",
+    label: "Social Isolation Research",
+    shortLabel: "Isolation",
+    icon: HeartHandshake,
+  },
   { to: "/about", label: "About Us", shortLabel: "About", icon: Users },
 ];

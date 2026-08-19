@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import threading
 import time
-from typing import Optional
+from typing import Callable, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -56,10 +56,102 @@ _cache_lock = threading.Lock()
 _cache: dict = {"data": None, "scraped_at": None}
 _scrape_in_progress = threading.Event()
 
-_research_cache_lock = threading.Lock()
-_research_cache: dict = {"papers": None, "researchers": None, "fetched_at": None}
-_research_fetch_in_progress = threading.Event()
-_research_fetch_thread: Optional[threading.Thread] = None
+class _ResearchCache:
+    """Encapsulates the fetch-once-then-poll-fresh pattern for one OpenAlex-
+    backed research topic (papers + researchers + fetched_at, refreshed from
+    `fetch_fn` on a TTL, blocking the first caller until the initial fetch
+    completes). Two instances exist below -- AFU papers and social isolation
+    papers are independent topics/pages with their own OpenAlex queries and
+    disk caches (see research.py), so this factors out the lock/event/thread
+    bookkeeping that would otherwise be duplicated per topic."""
+
+    def __init__(self, fetch_fn: Callable[..., dict]):
+        self._fetch_fn = fetch_fn
+        self._lock = threading.Lock()
+        self._cache: dict = {
+            "papers": None,
+            "researchers": None,
+            "total_citations": None,
+            "fetched_at": None,
+        }
+        self._fetch_in_progress = threading.Event()
+        self._fetch_thread: Optional[threading.Thread] = None
+
+    def _run_fetch(self, force: bool = False):
+        try:
+            result = self._fetch_fn(force=force)
+            with self._lock:
+                self._cache["papers"] = result["papers"]
+                self._cache["researchers"] = result["researchers"]
+                # .get(): a disk cache written before total_citations existed
+                # (still fresh under the multi-day TTL) won't have this key.
+                self._cache["total_citations"] = result.get("total_citations") or sum(
+                    p.get("cited_by_count", 0) for p in result["papers"]
+                )
+                self._cache["fetched_at"] = result["fetched_at"]
+        finally:
+            self._fetch_in_progress.clear()
+
+    def ensure_fresh(self, block: bool = False):
+        """Kick off a background OpenAlex fetch if the cache is empty or
+        stale. If block=True (used by every read endpoint) wait for the
+        fetch to finish so we don't return an empty list.
+
+        The frontend's research pages fire the meta/papers/researchers
+        endpoints for a topic concurrently on first load, so more than one
+        request can land here while the cache is still empty. Stashing the
+        thread in self._fetch_thread lets every blocking caller join the
+        *same* in-flight fetch, not just the one that started it."""
+        stale = (
+            self._cache["papers"] is None
+            or self._cache["fetched_at"] is None
+            or (time.time() - self._cache["fetched_at"]) > research.CACHE_TTL_SECONDS
+        )
+        if stale and not self._fetch_in_progress.is_set():
+            self._fetch_in_progress.set()
+            thread = threading.Thread(target=self._run_fetch, daemon=True)
+            # Only publish the thread to self._fetch_thread *after* start()
+            # returns -- otherwise a concurrent caller (papers/researchers/
+            # meta are all requested together on page load) can read the
+            # not-yet-started Thread object and call join() on it, which
+            # raises "cannot join thread before it is started".
+            thread.start()
+            self._fetch_thread = thread
+        if block and self._cache["papers"] is None and self._fetch_thread is not None:
+            self._fetch_thread.join()
+
+    def refresh(self) -> dict:
+        if self._fetch_in_progress.is_set():
+            return {"status": "already_in_progress"}
+        self._fetch_in_progress.set()
+        threading.Thread(target=self._run_fetch, args=(True,), daemon=True).start()
+        return {"status": "started"}
+
+    def papers(self) -> list[dict]:
+        with self._lock:
+            return self._cache["papers"] or []
+
+    def researchers(self) -> list[dict]:
+        with self._lock:
+            return self._cache["researchers"] or []
+
+    def meta(self) -> dict:
+        with self._lock:
+            papers = self._cache["papers"] or []
+            researchers = self._cache["researchers"] or []
+            total_citations = self._cache["total_citations"] or 0
+            fetched_at = self._cache["fetched_at"]
+        return {
+            "total_papers": len(papers),
+            "total_researchers": len(researchers),
+            "total_citations": total_citations,
+            "fetched_at": fetched_at,
+            "cache_age_seconds": (time.time() - fetched_at) if fetched_at else None,
+        }
+
+
+_afu_research = _ResearchCache(research.fetch_afu_research)
+_social_isolation_research = _ResearchCache(research.fetch_social_isolation_research)
 
 
 class Institution(BaseModel):
@@ -122,6 +214,7 @@ class ResearchersResponse(BaseModel):
 class ResearchMeta(BaseModel):
     total_papers: int
     total_researchers: int
+    total_citations: int
     fetched_at: Optional[float]
     cache_age_seconds: Optional[float]
 
@@ -182,45 +275,6 @@ def _ensure_cache_fresh(block: bool = False):
             t.join()
 
 
-def _run_research_fetch(force: bool = False):
-    try:
-        result = research.fetch_afu_research(force=force)
-        with _research_cache_lock:
-            _research_cache["papers"] = result["papers"]
-            _research_cache["researchers"] = result["researchers"]
-            _research_cache["fetched_at"] = result["fetched_at"]
-    finally:
-        _research_fetch_in_progress.clear()
-
-
-def _ensure_research_cache_fresh(block: bool = False):
-    """Kick off a background OpenAlex fetch if the research cache is empty or
-    stale. If block=True (used by every read endpoint) wait for the fetch to
-    finish so we don't return an empty list.
-
-    The frontend's Research page fires /research/meta, /research/papers, and
-    /research/researchers concurrently on first load, so more than one
-    request can land here while the cache is still empty. Only the request
-    that actually starts the fetch thread used to join() it -- the other
-    concurrent requests saw "already in progress" and returned immediately
-    with an empty list. Stashing the thread in `_research_fetch_thread` lets
-    every blocking caller join the *same* in-flight fetch, not just the one
-    that started it.
-    """
-    global _research_fetch_thread
-    stale = (
-        _research_cache["papers"] is None
-        or _research_cache["fetched_at"] is None
-        or (time.time() - _research_cache["fetched_at"]) > research.CACHE_TTL_SECONDS
-    )
-    if stale and not _research_fetch_in_progress.is_set():
-        _research_fetch_in_progress.set()
-        _research_fetch_thread = threading.Thread(target=_run_research_fetch, daemon=True)
-        _research_fetch_thread.start()
-    if block and _research_cache["papers"] is None and _research_fetch_thread is not None:
-        _research_fetch_thread.join()
-
-
 @app.get("/", tags=["meta"])
 def root():
     return {
@@ -238,6 +292,10 @@ def root():
             "/research/researchers",
             "/research/meta",
             "/research/refresh",
+            "/research/social-isolation/papers",
+            "/research/social-isolation/researchers",
+            "/research/social-isolation/meta",
+            "/research/social-isolation/refresh",
         ],
     }
 
@@ -371,10 +429,13 @@ def get_research_papers(
     year: Optional[int] = Query(None, description="Filter by publication year, e.g. 2022"),
 ):
     """Return AFU-related research papers (from OpenAlex), sorted by citation
-    count descending, optionally filtered by publication year."""
-    _ensure_research_cache_fresh(block=True)
-    with _research_cache_lock:
-        papers = _research_cache["papers"] or []
+    count descending, optionally filtered by publication year. Never blocks
+    on a cold/stale cache -- a background fetch is kicked off and this
+    returns whatever is cached right now (empty on a fully cold cache);
+    poll /research/meta or re-request until total_papers/count is
+    non-zero."""
+    _afu_research.ensure_fresh(block=False)
+    papers = _afu_research.papers()
 
     if year is not None:
         papers = [p for p in papers if p.get("publication_year") == year]
@@ -387,35 +448,68 @@ def get_researchers(
     limit: int = Query(50, ge=1, le=500, description="Max number of researchers to return"),
 ):
     """Return researchers behind AFU-related papers, ranked by total
-    citations across their AFU-matched papers, descending."""
-    _ensure_research_cache_fresh(block=True)
-    with _research_cache_lock:
-        researchers = _research_cache["researchers"] or []
+    citations across their AFU-matched papers, descending. Non-blocking --
+    see /research/papers."""
+    _afu_research.ensure_fresh(block=False)
+    researchers = _afu_research.researchers()
     return ResearchersResponse(count=len(researchers), results=researchers[:limit])
 
 
 @app.get("/research/meta", response_model=ResearchMeta, tags=["research"])
 def get_research_meta():
-    """Cache status for the research dataset: paper/researcher counts and
+    """Cache status for the AFU research dataset: paper/researcher counts and
     when it was last fetched from OpenAlex."""
-    with _research_cache_lock:
-        papers = _research_cache["papers"] or []
-        researchers = _research_cache["researchers"] or []
-        fetched_at = _research_cache["fetched_at"]
-    return ResearchMeta(
-        total_papers=len(papers),
-        total_researchers=len(researchers),
-        fetched_at=fetched_at,
-        cache_age_seconds=(time.time() - fetched_at) if fetched_at else None,
-    )
+    return ResearchMeta(**_afu_research.meta())
 
 
 @app.post("/research/refresh", tags=["research"])
 def refresh_research():
-    """Force a fresh fetch from OpenAlex. Runs in the background; poll
-    /research/meta to see when fetched_at updates."""
-    if _research_fetch_in_progress.is_set():
-        return {"status": "already_in_progress"}
-    _research_fetch_in_progress.set()
-    threading.Thread(target=_run_research_fetch, args=(True,), daemon=True).start()
-    return {"status": "started"}
+    """Force a fresh fetch from OpenAlex for the AFU research dataset. Runs
+    in the background; poll /research/meta to see when fetched_at updates."""
+    return _afu_research.refresh()
+
+
+@app.get("/research/social-isolation/papers", response_model=PapersResponse, tags=["research"])
+def get_social_isolation_papers(
+    year: Optional[int] = Query(None, description="Filter by publication year, e.g. 2022"),
+):
+    """Return social-isolation/loneliness-in-older-adults research papers
+    (from OpenAlex), sorted by citation count descending, optionally
+    filtered by publication year. Independent topic/dataset from
+    /research/papers -- see research.py. Non-blocking -- see
+    /research/papers for the cold-cache behavior."""
+    _social_isolation_research.ensure_fresh(block=False)
+    papers = _social_isolation_research.papers()
+
+    if year is not None:
+        papers = [p for p in papers if p.get("publication_year") == year]
+    papers = sorted(papers, key=lambda p: p.get("cited_by_count") or 0, reverse=True)
+    return PapersResponse(count=len(papers), results=papers)
+
+
+@app.get(
+    "/research/social-isolation/researchers", response_model=ResearchersResponse, tags=["research"]
+)
+def get_social_isolation_researchers(
+    limit: int = Query(50, ge=1, le=500, description="Max number of researchers to return"),
+):
+    """Return researchers behind social-isolation research papers, ranked by
+    total citations across their matched papers, descending."""
+    _social_isolation_research.ensure_fresh(block=False)
+    researchers = _social_isolation_research.researchers()
+    return ResearchersResponse(count=len(researchers), results=researchers[:limit])
+
+
+@app.get("/research/social-isolation/meta", response_model=ResearchMeta, tags=["research"])
+def get_social_isolation_meta():
+    """Cache status for the social-isolation research dataset: paper/
+    researcher counts and when it was last fetched from OpenAlex."""
+    return ResearchMeta(**_social_isolation_research.meta())
+
+
+@app.post("/research/social-isolation/refresh", tags=["research"])
+def refresh_social_isolation_research():
+    """Force a fresh fetch from OpenAlex for the social-isolation research
+    dataset. Runs in the background; poll /research/social-isolation/meta to
+    see when fetched_at updates."""
+    return _social_isolation_research.refresh()
