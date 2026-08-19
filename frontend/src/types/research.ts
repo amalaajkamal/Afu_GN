@@ -36,6 +36,7 @@ export interface ResearchersResponse {
 export interface ResearchMeta {
   total_papers: number;
   total_researchers: number;
+  total_citations: number;
   fetched_at: number | null;
   cache_age_seconds: number | null;
 }

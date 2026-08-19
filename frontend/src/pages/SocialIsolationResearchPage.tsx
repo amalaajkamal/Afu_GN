@@ -1,22 +1,20 @@
 import { useMemo, useState } from "react";
-import { BookOpenText, Loader2, Search } from "lucide-react";
+import { HeartHandshake, Loader2, Search } from "lucide-react";
 import { PageHeader } from "../components/layout/PageHeader";
 import { KpiCard } from "../components/cards/KpiCard";
 import { PaperCard } from "../components/cards/PaperCard";
 import { MultiSelect } from "../components/filters/MultiSelect";
-import { useResearchMeta, useResearchPapers, useResearchers } from "../hooks/useResearch";
+import {
+  useSocialIsolationMeta,
+  useSocialIsolationPapers,
+  useSocialIsolationResearchers,
+} from "../hooks/useSocialIsolationResearch";
 import { useLongWait } from "../hooks/useLongWait";
 
-// The Age-Friendly University concept originated in 2012 (Dublin City
-// University) -- years before that in the fetched dataset are stray
-// title-search false positives, not actual AFU literature, so the year
-// filter's own option list starts here rather than showing them.
-const MIN_YEAR = 2012;
-
-export function ResearchPage() {
-  const { data: meta, isLoading: metaLoading } = useResearchMeta();
-  const { data: papersData, isLoading: papersLoading } = useResearchPapers();
-  const { data: researchersData, isLoading: researchersLoading } = useResearchers(25);
+export function SocialIsolationResearchPage() {
+  const { data: meta, isLoading: metaLoading } = useSocialIsolationMeta();
+  const { data: papersData, isLoading: papersLoading } = useSocialIsolationPapers();
+  const { data: researchersData, isLoading: researchersLoading } = useSocialIsolationResearchers(25);
   const [yearFilter, setYearFilter] = useState<string[]>([]);
   const [authorFilter, setAuthorFilter] = useState("");
 
@@ -25,13 +23,7 @@ export function ResearchPage() {
 
   const yearOptions = useMemo(
     () =>
-      [
-        ...new Set(
-          papers
-            .map((p) => p.publication_year)
-            .filter((y): y is number => y != null && y >= MIN_YEAR),
-        ),
-      ]
+      [...new Set(papers.map((p) => p.publication_year).filter((y): y is number => y != null))]
         .sort((a, b) => b - a)
         .map((y) => ({ value: String(y), label: String(y) })),
     [papers],
@@ -54,26 +46,20 @@ export function ResearchPage() {
   }, [papers, yearFilter, authorFilter]);
 
   const isLoading = metaLoading || papersLoading || researchersLoading;
-  // The backend never blocks on a cold cache -- it returns an empty result
-  // immediately and fetches OpenAlex in the background (up to ~30-60s the
-  // first time). Both the meta and papers queries poll every few seconds
-  // while their result is empty (see useResearch.ts), so keying off
-  // papers.length alone (not isFetching, which flickers false *between*
-  // polls) keeps this state stable instead of flashing an empty "0 papers"
-  // list in the gaps.
+  // See ResearchPage.tsx's isBootstrapping -- same non-blocking cold-cache
+  // backend behavior, same fix (not keyed off isFetching, which flickers
+  // false between polls and would flash an empty "0 papers" list).
   const isBootstrapping = !isLoading && papers.length === 0;
   const waitedLong = useLongWait(isBootstrapping);
-  // Server-computed and cached alongside total_papers/total_researchers
-  // (see research.py's _fetch_research) rather than summed client-side from
-  // the papers list, so all three KPIs come from the same cached fetch.
+  // Server-computed and cached -- see ResearchPage.tsx's totalCitations.
   const totalCitations = meta?.total_citations ?? 0;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <PageHeader
-        title="Research Papers & Researchers"
-        subtitle="AFU-related research indexed via OpenAlex, ranked by citation impact"
-        icon={<BookOpenText size={20} strokeWidth={2.25} />}
+        title="Social Isolation Research & Researchers"
+        subtitle="Social isolation & loneliness research among older adults, indexed via OpenAlex, ranked by citation impact"
+        icon={<HeartHandshake size={20} strokeWidth={2.25} />}
       />
 
       {isLoading ? (

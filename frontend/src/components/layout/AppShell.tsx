@@ -1,7 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { NAV_ITEMS } from "./navConfig";
 import { ThemeToggle } from "./ThemeToggle";
-import { LiveStatusBadge } from "./LiveStatusBadge";
 
 function navLinkClasses(isActive: boolean) {
   return [
@@ -34,14 +33,8 @@ export function AppShell() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="hidden md:block">
-              <LiveStatusBadge />
-            </div>
             <ThemeToggle />
           </div>
-        </div>
-        <div className="border-t border-border px-4 pb-2.5 pt-1 md:hidden">
-          <LiveStatusBadge />
         </div>
       </header>
 

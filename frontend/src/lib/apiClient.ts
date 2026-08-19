@@ -67,4 +67,20 @@ export const apiClient = {
     if (!res.ok) throw new ApiError(`Research refresh request failed with status ${res.status}`);
     return (await res.json()) as { status: string };
   },
+
+  fetchSocialIsolationPapers: (opts?: { year?: string }) =>
+    getJson<PapersResponse>("/research/social-isolation/papers", opts),
+
+  fetchSocialIsolationResearchers: (opts?: { limit?: string }) =>
+    getJson<ResearchersResponse>("/research/social-isolation/researchers", opts),
+
+  fetchSocialIsolationMeta: () => getJson<ResearchMeta>("/research/social-isolation/meta"),
+
+  triggerSocialIsolationRefresh: async () => {
+    const url = new URL("/research/social-isolation/refresh", API_BASE_URL);
+    const res = await fetch(url.toString(), { method: "POST" });
+    if (!res.ok)
+      throw new ApiError(`Social isolation research refresh request failed with status ${res.status}`);
+    return (await res.json()) as { status: string };
+  },
 };
