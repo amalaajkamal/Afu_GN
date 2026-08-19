@@ -148,6 +148,15 @@ SOCIAL_ISOLATION_CACHE_PATH = os.path.join(RESEARCH_CACHE_DIR, "research_cache_s
 CACHE_TTL_DAYS = float(os.environ.get("RESEARCH_CACHE_TTL_DAYS", "7"))
 CACHE_TTL_SECONDS = CACHE_TTL_DAYS * 24 * 60 * 60
 
+# Bump this whenever the cached result dict's shape changes (e.g. adding
+# total_citations) or a fetch's underlying query set changes (e.g. widening
+# AFU_FILTERS). A disk cache written under an older version is treated as
+# stale regardless of its remaining TTL, so a fresh deploy that ships one of
+# those changes doesn't keep serving pre-existing on-disk data -- with a
+# multi-day TTL, on a host whose disk survives redeploys, that data could
+# otherwise look "live" for days despite being computed by the old code.
+CACHE_SCHEMA_VERSION = 2
+
 
 def _headers() -> dict:
     return {"User-Agent": USER_AGENT}
@@ -299,7 +308,11 @@ def _fetch_research(
     and always agree, even mid-bootstrap."""
     if not force:
         cached = _load_disk_cache(cache_path)
-        if cached and time.time() - cached.get("fetched_at", 0) < CACHE_TTL_SECONDS:
+        if (
+            cached
+            and cached.get("cache_schema_version") == CACHE_SCHEMA_VERSION
+            and time.time() - cached.get("fetched_at", 0) < CACHE_TTL_SECONDS
+        ):
             return cached
 
     papers = _fetch_papers(filters, max_results)
@@ -308,14 +321,20 @@ def _fetch_research(
         # on any request error (timeout, rate limiting, network blip) rather
         # than raising, so a fully empty result here almost always means the
         # whole crawl got shut out, not that the topic genuinely has zero
-        # papers. Fall back to whatever's still on disk (even if past its
-        # TTL -- stale-but-real beats empty) instead of overwriting a good
-        # cache with an empty one that would then be served as "fresh" for
-        # the next CACHE_TTL_SECONDS.
+        # papers. Fall back to whatever's still on disk -- even if it's past
+        # its TTL or schema version, stale-but-real beats empty -- instead of
+        # overwriting a good cache with an empty one that would then be
+        # served as "fresh" for the next CACHE_TTL_SECONDS.
         stale_cached = _load_disk_cache(cache_path)
         if stale_cached and stale_cached.get("papers"):
             return stale_cached
-        return {"papers": [], "researchers": [], "total_citations": 0, "fetched_at": time.time()}
+        return {
+            "papers": [],
+            "researchers": [],
+            "total_citations": 0,
+            "fetched_at": time.time(),
+            "cache_schema_version": CACHE_SCHEMA_VERSION,
+        }
 
     researchers = _aggregate_researchers(papers)
     total_citations = sum(p["cited_by_count"] for p in papers)
@@ -324,6 +343,7 @@ def _fetch_research(
         "researchers": researchers,
         "total_citations": total_citations,
         "fetched_at": time.time(),
+        "cache_schema_version": CACHE_SCHEMA_VERSION,
     }
     _save_disk_cache(cache_path, result)
     return result
