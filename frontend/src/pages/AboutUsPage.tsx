@@ -15,22 +15,25 @@ export function AboutUsPage() {
         <section className="space-y-3">
           <h3 className="text-lg font-bold text-text-primary">Our story</h3>
           <p className="text-text-secondary">
-            This started as three of us getting fed up with a spreadsheet. We kept going back to the
-            Age-Friendly University Global Network's member page for our own work, and every time we
-            needed a simple answer — how many members in a region, how a principle was actually
-            being applied — we ended up scrolling and counting by hand.
+            The three of us joined the University of Windsor as Mitacs GRA students, working under
+            host supervisor Dr. Shanthi Johnson and with support from Dr. Parthiban Natarajan,
+            Initiatives Officer at UWindsor's Office of the Vice-President, Research and Innovation
+            (VPRI), along with home supervisor Dr. D Rajeswari.
           </p>
           <p className="text-text-secondary">
-            So one weekend we just built the thing we wished existed. It was rough at first, but it
-            worked well enough that we kept reaching for it ourselves, and then friends started
-            asking to borrow it too. That's when we figured it was worth cleaning up and putting out
-            in the open.
+            Our project was to build an app to help seniors across Canada cope with social
+            isolation, grounded in data on the Age-Friendly University movement — fitting, since
+            UWindsor is itself a designated Age-Friendly University. But the underlying data turned
+            out to be scattered across inconsistent pages and painful to work with directly. So we
+            shifted focus: instead of shipping an app on top of data nobody could actually use, we
+            built the dashboard you're looking at now — the tool we needed just to make sense of
+            that data in the first place.
           </p>
           <p className="font-medium text-text-primary">Turns out other people needed this too.</p>
         </section>
 
         <section className="space-y-4">
-          <h3 className="text-lg font-bold text-text-primary">About us</h3>
+          <h3 className="text-lg font-bold text-text-primary">The team</h3>
           <div className="grid grid-cols-1 gap-6 py-2 sm:grid-cols-3">
             <TeamPhoto
               src="/team/dron.jpg"
@@ -48,13 +51,24 @@ export function AboutUsPage() {
           </div>
         </section>
 
-        <section className="space-y-2">
+        <section className="space-y-4">
+          <h3 className="text-lg font-bold text-text-primary">Our supervisors</h3>
           <p className="text-text-secondary">
-            We'd also like to say thanks to someone who's been in our corner from the start:
+            Thanks to the mentors who guided this project from the start:
           </p>
-          <p className="text-text-primary">
-            <strong className="font-semibold">Dr. Shanthi Johnson</strong>{" "}
-            <span className="text-text-secondary">— for the guidance and the room to run with it.</span>
+          <div className="grid grid-cols-1 gap-6 py-2 sm:grid-cols-3">
+            <TeamPhoto src="/team/johnson.jpg" name="Dr. Shanthi Johnson" role="Host Supervisor" />
+            <TeamPhoto
+              src="/team/parthiban.jpg"
+              name="Dr. Parthiban Natarajan"
+              role="Initiatives Officer, VPRI – University of Windsor"
+            />
+            <TeamPhoto src="/team/rajeswari.jpg" name="Dr. D Rajeswari" role="Home Supervisor" />
+          </div>
+          <p className="text-text-secondary">
+            Dr. Johnson's own research spans aging in place, the Age-Friendly University movement,
+            and related areas of healthy aging — the same domains this dashboard was built to make
+            sense of.
           </p>
         </section>
 
