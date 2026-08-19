@@ -2,11 +2,11 @@ import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 
-// Route-level code splitting: only the Global Overview and Impact Map pages
-// pull in Plotly (the largest dependency in the bundle), so keeping every
-// page lazy means a visitor landing on e.g. Best Practices never downloads
-// map code at all — worthwhile on the slower mobile connections this
-// dashboard is meant to be usable on.
+// Route-level code splitting: only the Global Overview page pulls in Plotly
+// (the largest dependency in the bundle), so keeping every page lazy means a
+// visitor landing on e.g. Best Practices never downloads map code at all —
+// worthwhile on the slower mobile connections this dashboard is meant to be
+// usable on.
 const GlobalOverviewPage = lazy(() =>
   import("./pages/GlobalOverviewPage").then((m) => ({ default: m.GlobalOverviewPage })),
 );
@@ -20,9 +20,6 @@ const BestPracticesExplorerPage = lazy(() =>
   import("./pages/BestPracticesExplorerPage").then((m) => ({
     default: m.BestPracticesExplorerPage,
   })),
-);
-const ImpactMapPage = lazy(() =>
-  import("./pages/ImpactMapPage").then((m) => ({ default: m.ImpactMapPage })),
 );
 const AboutUsPage = lazy(() =>
   import("./pages/AboutUsPage").then((m) => ({ default: m.AboutUsPage })),
@@ -73,14 +70,6 @@ function App() {
           element={
             <Suspense fallback={<PageFallback />}>
               <BestPracticesExplorerPage />
-            </Suspense>
-          }
-        />
-        <Route
-          path="impact-map"
-          element={
-            <Suspense fallback={<PageFallback />}>
-              <ImpactMapPage />
             </Suspense>
           }
         />

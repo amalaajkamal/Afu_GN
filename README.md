@@ -1,3 +1,4 @@
+
 # AFUGN Member Directory API
 
 Unofficial JSON API for the Age-Friendly University Global Network member directory (scraped from [afugn.org](https://www.afugn.org/afugn-members)). Not affiliated with or endorsed by AFUGN.

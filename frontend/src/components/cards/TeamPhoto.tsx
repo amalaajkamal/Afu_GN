@@ -17,7 +17,7 @@ export function TeamPhoto({
   /** Drop a file at frontend/public/team/<file>.jpg and pass "/team/<file>.jpg" here. */
   src?: string;
   name: string;
-  role: string;
+  role?: string;
   linkedin?: string;
 }) {
   return (
@@ -31,7 +31,7 @@ export function TeamPhoto({
       </div>
       <div>
         <p className="font-semibold text-text-primary">{name}</p>
-        <p className="text-sm text-text-secondary">{role}</p>
+        {role && <p className="text-sm text-text-secondary">{role}</p>}
         {linkedin && (
           <a
             href={linkedin}
