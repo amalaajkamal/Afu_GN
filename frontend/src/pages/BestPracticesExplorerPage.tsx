@@ -83,8 +83,7 @@ export function BestPracticesExplorerPage() {
               <ExternalLink size={14} strokeWidth={2.25} />
             </a>
             <p className="text-right text-xs text-text-secondary">
-              Data last downloaded and updated: June 2026. View the source above for more recent
-              submissions.
+              Data last downloaded and updated: June 2026.
             </p>
           </div>
         }

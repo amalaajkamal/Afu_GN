@@ -238,9 +238,9 @@ failing — see `merge_live_country_data`/`merge_live_regional_data` in
 
 ### New frontend (`frontend/`)
 
-A second, independently-built dashboard covering the same five views as
+A second, independently-built dashboard covering the same four views as
 `app.py` (Global Overview, Principle Gap Analysis, Regional Equity, Best
-Practices Explorer, Impact Map), built with React + TypeScript + Vite +
+Practices Explorer), built with React + TypeScript + Vite +
 Tailwind CSS instead of Streamlit. It is purely additive: nothing in
 `app.py`, `api.py`, `api_client.py`, `scraper.py`, or `geocode.py` is
 modified or depended on for its own logic beyond reading `api.py`'s HTTP

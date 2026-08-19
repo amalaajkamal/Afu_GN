@@ -6,14 +6,13 @@ export function AboutUsPage() {
   return (
     <div className="h-full overflow-y-auto pb-8">
       <PageHeader
-        title="About Us"
+        title="Our Story"
         subtitle="How this dashboard came to be"
         icon={<Users size={20} strokeWidth={2.25} />}
       />
 
       <div className="mx-auto max-w-3xl space-y-8 text-[15px] leading-relaxed text-text-primary">
         <section className="space-y-3">
-          <h3 className="text-lg font-bold text-text-primary">Our story</h3>
           <p className="text-text-secondary">
             The three of us joined the University of Windsor as Mitacs GRA students, working under
             host supervisor Dr. Shanthi Johnson and with support from Dr. Parthiban Natarajan,
@@ -38,14 +37,16 @@ export function AboutUsPage() {
             <TeamPhoto
               src="/team/dron.jpg"
               name="Dron Haritwal"
-              role="Windsor, ON"
               linkedin="https://www.linkedin.com/in/dronharitwal"
             />
-            <TeamPhoto src="/team/amala.png" name="Amala K J" role="Windsor, ON" />
+            <TeamPhoto
+              src="/team/amala.png"
+              name="Amala K J"
+              linkedin="https://www.linkedin.com/in/amala-k-j-3b7666144/"
+            />
             <TeamPhoto
               src="/team/apurva.jpg"
               name="Apurva Shovit"
-              role="Windsor, ON"
               linkedin="https://www.linkedin.com/in/apurva-shovit-541ba2281/"
             />
           </div>
@@ -57,19 +58,25 @@ export function AboutUsPage() {
             Thanks to the mentors who guided this project from the start:
           </p>
           <div className="grid grid-cols-1 gap-6 py-2 sm:grid-cols-3">
-            <TeamPhoto src="/team/johnson.jpg" name="Dr. Shanthi Johnson" role="Host Supervisor" />
+            <TeamPhoto
+              src="/team/johnson.jpg"
+              name="Dr. Shanthi Johnson"
+              role="Host Supervisor"
+              linkedin="https://www.linkedin.com/in/shanthi-johnson-533b1110/"
+            />
             <TeamPhoto
               src="/team/parthiban.jpg"
               name="Dr. Parthiban Natarajan"
-              role="Initiatives Officer, VPRI – University of Windsor"
+              role="Initiatives Officer, VPRI"
+              linkedin="https://www.linkedin.com/in/parthiban-natarajan/"
             />
-            <TeamPhoto src="/team/rajeswari.jpg" name="Dr. D Rajeswari" role="Home Supervisor" />
+            <TeamPhoto
+              src="/team/rajeswari.jpg"
+              name="Dr. D Rajeswari"
+              role="Home Supervisor"
+              linkedin="https://www.linkedin.com/in/rajeswaridevarajan/"
+            />
           </div>
-          <p className="text-text-secondary">
-            Dr. Johnson's own research spans aging in place, the Age-Friendly University movement,
-            and related areas of healthy aging — the same domains this dashboard was built to make
-            sense of.
-          </p>
         </section>
 
         <section className="space-y-2">

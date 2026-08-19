@@ -3,7 +3,6 @@ import {
   GraduationCap,
   HeartHandshake,
   LayoutGrid,
-  Map,
   Ruler,
   Compass,
   Users,
@@ -27,7 +26,6 @@ export const NAV_ITEMS: NavItem[] = [
     shortLabel: "Practices",
     icon: GraduationCap,
   },
-  { to: "/impact-map", label: "Impact Map", shortLabel: "Map", icon: Map },
   { to: "/research", label: "Research", shortLabel: "Research", icon: BookOpenText },
   {
     to: "/research/social-isolation",
@@ -35,5 +33,5 @@ export const NAV_ITEMS: NavItem[] = [
     shortLabel: "Isolation",
     icon: HeartHandshake,
   },
-  { to: "/about", label: "About Us", shortLabel: "About", icon: Users },
+  { to: "/about", label: "Our Story", shortLabel: "Story", icon: Users },
 ];

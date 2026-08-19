@@ -24,7 +24,7 @@ export function RegionFilterTabs({ regions, total, selected, onSelect }: Props) 
     <div
       role="tablist"
       aria-label="Filter map by region"
-      className="mt-3 flex flex-wrap gap-2 sm:flex-nowrap sm:overflow-x-auto"
+      className="flex flex-wrap gap-2 sm:flex-nowrap sm:overflow-x-auto"
     >
       {tabs.map(({ region, count }) => {
         const isActive = selected === region;
@@ -46,10 +46,10 @@ export function RegionFilterTabs({ regions, total, selected, onSelect }: Props) 
                 : undefined
             }
             className={[
-              "flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-semibold transition-colors",
+              "flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-semibold transition-all duration-200 ease-out",
               isActive
-                ? ""
-                : "border-border bg-surface text-text-secondary hover:bg-surface-muted",
+                ? "scale-105 shadow-sm"
+                : "border-border bg-surface text-text-secondary hover:-translate-y-0.5 hover:bg-surface-muted hover:shadow-sm",
             ].join(" ")}
           >
             {REGION_ABBREV[region] ?? region}
