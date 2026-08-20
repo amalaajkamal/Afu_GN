@@ -81,14 +81,31 @@ class _ResearchCache:
         try:
             result = self._fetch_fn(force=force)
             with self._lock:
-                self._cache["papers"] = result["papers"]
-                self._cache["researchers"] = result["researchers"]
-                # .get(): a disk cache written before total_citations existed
-                # (still fresh under the multi-day TTL) won't have this key.
-                self._cache["total_citations"] = result.get("total_citations") or sum(
-                    p.get("cited_by_count", 0) for p in result["papers"]
-                )
-                self._cache["fetched_at"] = result["fetched_at"]
+                if result["papers"] or self._cache["papers"]:
+                    # A non-empty result, or we already have prior good data
+                    # to keep: safe to (re)publish, including fetched_at --
+                    # this is a genuine fetch, not a total crawl failure.
+                    self._cache["papers"] = result["papers"] or self._cache["papers"]
+                    self._cache["researchers"] = result["researchers"] or self._cache["researchers"]
+                    # .get(): a disk cache written before total_citations existed
+                    # (still fresh under the multi-day TTL) won't have this key.
+                    self._cache["total_citations"] = result.get("total_citations") or sum(
+                        p.get("cited_by_count", 0) for p in (result["papers"] or self._cache["papers"] or [])
+                    )
+                    if result["papers"]:
+                        self._cache["fetched_at"] = result["fetched_at"]
+                else:
+                    # First-ever fetch came back completely empty (OpenAlex
+                    # unreachable/rate-limited, no disk cache to fall back
+                    # on). Leave fetched_at unset so ensure_fresh's staleness
+                    # check keeps treating the cache as stale and retries on
+                    # the next request/poll, instead of locking in an empty
+                    # result as "fresh" for CACHE_TTL_SECONDS (up to 7 days)
+                    # -- see research.py's own stale-disk-cache fallback,
+                    # which this mirrors at the in-memory layer.
+                    self._cache["papers"] = []
+                    self._cache["researchers"] = []
+                    self._cache["total_citations"] = 0
         finally:
             self._fetch_in_progress.clear()
 
