@@ -62,25 +62,22 @@ export function RegionDonutChart({ regions, selected, onSelect }: Props) {
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <details className="mt-1 text-sm text-text-secondary">
-        <summary className="cursor-pointer select-none">View as table</summary>
-        <table className="mt-2 w-full text-left text-sm">
-          <thead>
-            <tr className="text-text-secondary">
-              <th className="py-1 pr-2 font-medium">Region</th>
-              <th className="py-1 font-medium">Institutions</th>
+      <table className="mt-2 w-full text-left text-sm text-text-secondary">
+        <thead>
+          <tr className="text-text-secondary">
+            <th className="py-1 pr-2 font-medium">Region</th>
+            <th className="py-1 font-medium">Institutions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {regions.map((r) => (
+            <tr key={r.region} className="border-t border-border">
+              <td className="py-1 pr-2">{r.region}</td>
+              <td className="py-1 tabular-nums">{r.afuInstitutions}</td>
             </tr>
-          </thead>
-          <tbody>
-            {regions.map((r) => (
-              <tr key={r.region} className="border-t border-border">
-                <td className="py-1 pr-2">{r.region}</td>
-                <td className="py-1 tabular-nums">{r.afuInstitutions}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </details>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
