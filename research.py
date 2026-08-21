@@ -35,12 +35,20 @@ Design notes:
   clear "social isolation" is its own substantial research field (thousands
   of papers) worth browsing on its own terms, not just a one-off addendum to
   AFU papers. SOCIAL_ISOLATION_SEARCH_PHRASES below still avoids the bare,
-  single-word "social isolation" search on its own, though: tried alone, it
-  matched ~800+ general papers going back to the 1940s having nothing to do
-  with older adults or campuses, the same failure mode "aging" caused for
-  the AFU topic. Every phrase here pairs "social isolation"/"loneliness"
-  with a second qualifying word (older adults, aging, elderly, campus,
-  university, students, intergenerational) to stay on-topic.
+  single-word "social isolation"/"loneliness" search on its own, though:
+  tried alone, it matched ~800+ general papers going back to the 1940s
+  having nothing to do with older adults or campuses, the same failure mode
+  "aging" caused for the AFU topic. Every title phrase pairs "social
+  isolation"/"loneliness" (and synonymous framings -- social exclusion,
+  disconnection, withdrawal, "socially isolated", "perceived isolation")
+  with a second qualifying word (older adults, aging, elderly, seniors,
+  campus, university, students, intergenerational, nursing home,
+  community-dwelling, retirement, covid) to stay on-topic while still
+  catching papers that a narrower phrase list would miss.
+  SOCIAL_ISOLATION_ABSTRACT_PHRASES/_EXPANSION_TITLE_WORDS then apply the
+  same title-word + exact-abstract-phrase recovery technique used for
+  AFU_ABSTRACT_PHRASE below, to pull in papers that discuss the topic
+  substantively without naming it in their own title.
 - To recover more AFU papers than the title-phrase list alone catches
   (papers that discuss AFU substantively without naming it in their own
   title -- e.g. a case-study titled after a specific campus program),
@@ -123,15 +131,60 @@ SOCIAL_ISOLATION_SEARCH_PHRASES = [
     "social isolation college students",
     "social isolation intergenerational",
     "combating social isolation",
+    "loneliness campus",
+    "loneliness college students",
+    "loneliness intergenerational",
+    # Core older-adult / aging pairings.
     "social isolation older adults",
     "social isolation aging",
     "social isolation elderly",
+    "social isolation seniors",
+    "social isolation retirement",
+    "social isolation nursing home",
+    "social isolation community-dwelling",
     "loneliness older adults",
     "loneliness aging",
     "loneliness elderly",
+    "loneliness seniors",
+    "loneliness nursing home",
+    "loneliness community-dwelling",
+    # Synonymous framings of the same phenomenon that a plain
+    # "social isolation"/"loneliness" search misses entirely -- each is
+    # still paired with a qualifying word for the same on-topic reason as
+    # above, not used bare.
+    "social exclusion older adults",
+    "social exclusion elderly",
+    "social disconnection older adults",
+    "social withdrawal older adults",
+    "socially isolated older adults",
+    "socially isolated elderly",
+    "perceived isolation older adults",
+    "social isolation covid older adults",
+    "loneliness covid older adults",
 ]
 
-SOCIAL_ISOLATION_FILTERS = [f"title.search:{phrase}" for phrase in SOCIAL_ISOLATION_SEARCH_PHRASES]
+# See the module docstring's "recover more AFU papers" note -- the same
+# technique applied here: a broad, generic title word alone (e.g. "aging")
+# would reintroduce exactly the noise problem SOCIAL_ISOLATION_SEARCH_PHRASES
+# above avoids, but pairing it with an exact-phrase *abstract* requirement
+# stays on-topic while recovering papers that discuss social isolation/
+# loneliness substantively without pairing those words in their own title
+# (e.g. a paper titled purely after a specific intervention program).
+SOCIAL_ISOLATION_ABSTRACT_PHRASES = ["social isolation", "loneliness"]
+SOCIAL_ISOLATION_ABSTRACT_EXPANSION_TITLE_WORDS = [
+    "older adults",
+    "aging",
+    "elderly",
+    "seniors",
+    "campus",
+    "university",
+]
+
+SOCIAL_ISOLATION_FILTERS = [f"title.search:{phrase}" for phrase in SOCIAL_ISOLATION_SEARCH_PHRASES] + [
+    f'title.search:{word},abstract.search:"{phrase}"'
+    for phrase in SOCIAL_ISOLATION_ABSTRACT_PHRASES
+    for word in SOCIAL_ISOLATION_ABSTRACT_EXPANSION_TITLE_WORDS
+]
 
 PER_PAGE = 200
 REQUEST_DELAY = 0.25
@@ -155,7 +208,7 @@ CACHE_TTL_SECONDS = CACHE_TTL_DAYS * 24 * 60 * 60
 # those changes doesn't keep serving pre-existing on-disk data -- with a
 # multi-day TTL, on a host whose disk survives redeploys, that data could
 # otherwise look "live" for days despite being computed by the old code.
-CACHE_SCHEMA_VERSION = 2
+CACHE_SCHEMA_VERSION = 3
 
 
 def _headers() -> dict:
