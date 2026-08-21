@@ -31,7 +31,7 @@ export function PrincipleGapAnalysisPage() {
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-2">
-        <div className="flex min-h-0 flex-col gap-3 overflow-y-auto rounded-xl border border-border bg-surface p-4 shadow-sm">
+        <div className="flex min-h-0 flex-col gap-3 overflow-y-auto rounded-xl border border-border bg-surface p-4 shadow-sm [scrollbar-gutter:stable]">
           {principlesQuery.isLoading ? (
             <div className="h-80 animate-pulse rounded-lg bg-surface-muted" />
           ) : (
