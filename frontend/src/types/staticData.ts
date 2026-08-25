@@ -1,4 +1,4 @@
-export type GapFlag = "Well Implemented" | "Moderately Implemented" | "Underimplemented";
+export type GapFlag = "Well Implemented" | "Moderately Implemented" | "Under Implemented";
 
 export interface Principle {
   principleNumber: number;

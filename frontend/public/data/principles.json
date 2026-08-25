@@ -32,7 +32,7 @@
     "shortLabel": "P5: Online access for older adults",
     "mentions": 4,
     "pct": 14,
-    "gapFlag": "Underimplemented"
+    "gapFlag": "Under Implemented"
   },
   {
     "principleNumber": 6,
@@ -46,7 +46,7 @@
     "shortLabel": "P7: Student understanding of longevity",
     "mentions": 5,
     "pct": 18,
-    "gapFlag": "Underimplemented"
+    "gapFlag": "Under Implemented"
   },
   {
     "principleNumber": 8,
@@ -67,6 +67,6 @@
     "shortLabel": "P10: Dialogue with aging organizations",
     "mentions": 6,
     "pct": 21,
-    "gapFlag": "Underimplemented"
+    "gapFlag": "Under Implemented"
   }
 ]

@@ -60,7 +60,7 @@ export function BestPracticesExplorerPage() {
             ? "Well Implemented"
             : mentions / total >= 0.2
               ? "Moderately Implemented"
-              : "Underimplemented",
+              : "Under Implemented",
       };
     });
   }, [filtered]);

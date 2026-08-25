@@ -12,7 +12,7 @@ export function PrincipleGapAnalysisPage() {
 
   const well = principles.filter((p) => p.gapFlag === "Well Implemented").length;
   const moderate = principles.filter((p) => p.gapFlag === "Moderately Implemented").length;
-  const under = principles.filter((p) => p.gapFlag === "Underimplemented").length;
+  const under = principles.filter((p) => p.gapFlag === "Under Implemented").length;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -25,7 +25,7 @@ export function PrincipleGapAnalysisPage() {
       <div className="mb-3 flex shrink-0 flex-wrap gap-2">
         <KpiCard value={well} label="Well Implemented" accent="sage" />
         <KpiCard value={moderate} label="Moderately Implemented" accent="amber" />
-        <KpiCard value={under} label="Underimplemented" accent="rose" />
+        <KpiCard value={under} label="Under Implemented" accent="rose" />
         <KpiCard value="18%" label="Submission Rate" accent="ocean" />
       </div>
 
