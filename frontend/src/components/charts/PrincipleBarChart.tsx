@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { useTheme } from "../../theme/ThemeProvider";
 import { getMapTheme } from "../../lib/mapTheme";
+import { PrincipleTable } from "./PrincipleTable";
 import type { Principle } from "../../types/staticData";
 
 export function PrincipleBarChart({ principles, height = 380 }: { principles: Principle[]; height?: number }) {
@@ -53,24 +54,9 @@ export function PrincipleBarChart({ principles, height = 380 }: { principles: Pr
       </div>
       <details className="mt-1 text-sm text-text-secondary">
         <summary className="cursor-pointer select-none">View as table</summary>
-        <table className="mt-2 w-full text-left text-sm">
-          <thead>
-            <tr className="text-text-secondary">
-              <th className="py-1 pr-2 font-medium">Principle</th>
-              <th className="py-1 pr-2 font-medium">Citation %</th>
-              <th className="py-1 font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {principles.map((p) => (
-              <tr key={p.principleNumber} className="border-t border-border">
-                <td className="py-1 pr-2">{p.shortLabel.replace(/\n/g, " ")}</td>
-                <td className="py-1 pr-2 tabular-nums">{p.pct}%</td>
-                <td className="py-1">{p.gapFlag}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mt-2">
+          <PrincipleTable principles={principles} />
+        </div>
       </details>
     </div>
   );

@@ -132,25 +132,46 @@ def merge_live_regional_data(static_df, live_region_counts, live_countries_in_af
         df["Countries_in_AFU"] = df["Region"].map(live_countries_in_afu).fillna(df["Countries_in_AFU"]).astype(int)
     return df
 
+PRINCIPLE_LABELS = {
+    1: "P1: Encourage participation\nof older adults",
+    2: "P2: Personal & career\ndevelopment",
+    3: "P3: Recognize educational\nneeds",
+    4: "P4: Intergenerational\nlearning",
+    5: "P5: Online access for\nolder adults",
+    6: "P6: Research agenda\ninformed by aging",
+    7: "P7: Student understanding\nof longevity",
+    8: "P8: Health, wellness &\ncultural access",
+    9: "P9: Engage retired\ncommunity",
+    10: "P10: Dialogue with aging\norganizations",
+}
+
+def _gap_flag_for(pct):
+    if pct >= 40:
+        return "Well Implemented"
+    if pct >= 20:
+        return "Moderately Implemented"
+    return "Under Implemented"
+
 @st.cache_data
 def load_principles_data():
-    return pd.DataFrame([
-        (1,"P1: Encourage participation\nof older adults",20,71.0,"Well Implemented"),
-        (2,"P2: Personal & career\ndevelopment",9,32.0,"Moderately Implemented"),
-        (3,"P3: Recognize educational\nneeds",8,29.0,"Moderately Implemented"),
-        (4,"P4: Intergenerational\nlearning",15,54.0,"Well Implemented"),
-        (5,"P5: Online access for\nolder adults",4,14.0,"Under Implemented"),
-        (6,"P6: Research agenda\ninformed by aging",14,50.0,"Well Implemented"),
-        (7,"P7: Student understanding\nof longevity",5,18.0,"Under Implemented"),
-        (8,"P8: Health, wellness &\ncultural access",13,46.0,"Well Implemented"),
-        (9,"P9: Engage retired\ncommunity",7,25.0,"Moderately Implemented"),
-        (10,"P10: Dialogue with aging\norganizations",6,21.0,"Under Implemented"),
-    ], columns=["Principle_Number","Short_Label","Mentions","Pct","Gap_Flag"])
+    df_bp = load_best_practices()
+    pcol = next(c for c in df_bp.columns if "Principle(s)" in c)
+    total = len(df_bp) or 1
+    counts = Counter()
+    for val in df_bp[pcol].fillna(""):
+        counts.update(set(int(n) for n in re.findall(r"Principle\s*(\d+)", val)))
+
+    rows = []
+    for i in range(1, 11):
+        mentions = counts.get(i, 0)
+        pct = round(mentions / total * 100)
+        rows.append((i, PRINCIPLE_LABELS[i], mentions, float(pct), _gap_flag_for(pct)))
+    return pd.DataFrame(rows, columns=["Principle_Number","Short_Label","Mentions","Pct","Gap_Flag"])
 
 @st.cache_data
 def load_best_practices():
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    csv_path = os.path.join(base_dir, "Form_Data_Entry-Grid_view.csv")
+    csv_path = os.path.join(base_dir, "Form Data Entry-Grid view.csv")
     df = pd.read_csv(csv_path)
     df.columns = [c.strip() for c in df.columns]
     return df
@@ -667,13 +688,18 @@ if page == "🌍 Global Overview":
 # ══════════════════════════════════════════════════════════════════════════
 elif page == "📐 Principle Implementation Analysis":
 
-    st.markdown("""
+    _df_bp_p2 = load_best_practices()
+    _ucol_p2 = next(c for c in _df_bp_p2.columns if "Submitting University" in c)
+    total_subs = len(_df_bp_p2)
+    n_institutions = _df_bp_p2[_ucol_p2].nunique()
+
+    st.markdown(f"""
     <div style="background:#050d1a; padding:6px 0 2px 0;">
         <span style="color:#4FC3F7; font-size:1.1rem; font-weight:800; letter-spacing:0.06em;">
             📐 AFU PRINCIPLE IMPLEMENTATION ANALYSIS
         </span>
         <span style="color:#37474F; font-size:0.78rem; margin-left:12px;">
-            Based on 28 Best Practice submissions from 20 institutions
+            Based on {total_subs} Best Practice submissions from {n_institutions} institutions
         </span>
     </div>
     """, unsafe_allow_html=True)
@@ -682,6 +708,15 @@ elif page == "📐 Principle Implementation Analysis":
     well = df_principles[df_principles["Gap_Flag"]=="Well Implemented"].shape[0]
     mod  = df_principles[df_principles["Gap_Flag"]=="Moderately Implemented"].shape[0]
     unde = df_principles[df_principles["Gap_Flag"]=="Under Implemented"].shape[0]
+
+    lowest_pct = df_principles["Pct"].min()
+    lowest = df_principles[df_principles["Pct"] == lowest_pct]
+    gap_pct_text = " | ".join(
+        f"P{int(r.Principle_Number)} — Only {int(r.Pct)}%" for r in lowest.itertuples()
+    )
+    gap_theme_text = " & ".join(
+        r.Short_Label.split(":", 1)[1].strip().replace("\n", " ") for r in lowest.itertuples()
+    )
 
     st.markdown(f"""
     <div style="display:flex; gap:8px; margin:6px 0;">
@@ -698,14 +733,14 @@ elif page == "📐 Principle Implementation Analysis":
             <div style="color:#546E7A; font-size:0.65rem; text-transform:uppercase;">Under Implemented</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:6px 12px; flex:2; text-align:center; border-top:2px solid #EF5350;">
-            <div style="color:#EF5350; font-size:1.1rem; font-weight:800;">P5 — Only 14% | P7 — Only 18%</div>
-            <div style="color:#546E7A; font-size:0.65rem; text-transform:uppercase;">Most Critical Gap — Online Access & Longevity Dividend</div>
+            <div style="color:#EF5350; font-size:1.1rem; font-weight:800;">{gap_pct_text}</div>
+            <div style="color:#546E7A; font-size:0.65rem; text-transform:uppercase;">Most Critical Gap — {gap_theme_text}</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
     # Principle bar chart — full width
-    st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:2px;">PRINCIPLE CITATION FREQUENCY (% of 25 submissions)</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:2px;">PRINCIPLE CITATION FREQUENCY (% of {total_subs} submissions)</div>', unsafe_allow_html=True)
     fig_p = px.bar(df_principles.sort_values("Pct"),
                    x="Pct", y="Short_Label", color="Gap_Flag",
                    color_discrete_map=GAP_COLORS, orientation="h", text="Pct",
@@ -750,7 +785,7 @@ elif page == "📐 Principle Implementation Analysis":
         )
         st.plotly_chart(fig_aud, use_container_width=True, config={"displayModeBar": False})
     except Exception:
-        st.warning("Upload Form_Data_Entry-Grid_view.csv to the repo to enable audience analysis.")
+        st.warning("Upload \"Form Data Entry-Grid view.csv\" to the repo to enable audience analysis.")
 
 # ══════════════════════════════════════════════════════════════════════════
 # PAGE 3 — REGIONAL DISTRIBUTION
@@ -916,7 +951,7 @@ elif page == "📋 Best Practices Explorer":
                     st.markdown(f"**Duration:** {row.get(duration_col,'N/A')}")
 
     except FileNotFoundError:
-        st.error("⚠️ Form_Data_Entry-Grid_view.csv not found.")
+        st.error("⚠️ \"Form Data Entry-Grid view.csv\" not found.")
     except Exception as e:
         st.error(f"Error: {e}")
 
