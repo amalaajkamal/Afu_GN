@@ -4,7 +4,7 @@ import { PageHeader } from "../components/layout/PageHeader";
 import { KpiCard } from "../components/cards/KpiCard";
 import { MultiSelect } from "../components/filters/MultiSelect";
 import { BestPracticeCard } from "../components/cards/BestPracticeCard";
-import { PrincipleBarChart } from "../components/charts/PrincipleBarChart";
+import { PrincipleTable } from "../components/charts/PrincipleTable";
 import { useBestPractices } from "../hooks/useStaticData";
 import type { Principle } from "../types/staticData";
 
@@ -83,7 +83,7 @@ export function BestPracticesExplorerPage() {
               <ExternalLink size={14} strokeWidth={2.25} />
             </a>
             <p className="text-right text-xs text-text-secondary">
-              Data last downloaded and updated: June 2026.
+              Data last downloaded and updated: August 2026.
             </p>
           </div>
         }
@@ -118,10 +118,13 @@ export function BestPracticesExplorerPage() {
             <KpiCard value={uniqueUniversities} label="Unique Universities" accent="ocean" />
           </div>
 
-          <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[340px_minmax(0,1fr)]">
             {filtered.length > 0 && (
-              <div className="min-h-0 overflow-y-auto rounded-xl border border-border bg-surface p-4 shadow-sm">
-                <PrincipleBarChart principles={filteredPrincipleCounts} height={320} />
+              <div className="min-h-0 self-start overflow-y-auto rounded-xl border border-border bg-surface p-4 shadow-sm">
+                <PrincipleTable
+                  principles={filteredPrincipleCounts}
+                  title="Principle Citation Frequency (% of submissions)"
+                />
               </div>
             )}
 

@@ -240,7 +240,7 @@ into `frontend/public/data/`. It never modifies the source files.
 | Static file | Source in repo root | Used for |
 |---|---|---|
 | `public/data/principles.json` | the 10-row principles table currently hardcoded in `app.py`'s `load_principles_data()` | Principle Gap Analysis page bar chart + KPI tiles |
-| `public/data/best_practices.json` | `Form_Data_Entry-Grid_view.csv` | Best Practices Explorer page cards/filters |
+| `public/data/best_practices.json` | `Form Data Entry-Grid view.csv` | Best Practices Explorer page cards/filters |
 | `public/data/population_65.json` | `populatio_65+_worldbank.csv` | Regional Equity page density chart |
 | `public/data/india_outline.geojson` | `india_outline.geojson` | India boundary overlay on every map, **per the CLAUDE.md rule that this must reflect the Indian Constitution/Government of India boundary** — copied verbatim, never redrawn |
 | `public/data/static_country_snapshot.json` | `load_static_country_data()` / `STATIC_INSTITUTIONS` in `app.py` | API-down fallback for country markers/lists |
@@ -291,7 +291,9 @@ presentation. Nothing from the existing dashboard is dropped.
   small screens instead of dropdowns).
 - KPI row: Ongoing / One-Time / Unique Universities counts for the filtered
   set.
-- Filtered `PrincipleBarChart` mini-variant.
+- Filtered `PrincipleTable` (citation % + Well/Moderate/Under status per
+  principle for the current filter set — table only, no bar chart, so the
+  space stays with the submission cards).
 - `BestPracticeCard` list: one expandable card per submission (title,
   university, purpose, outcomes, uniqueness, principles, type, duration) —
   replaces `st.expander` rows.

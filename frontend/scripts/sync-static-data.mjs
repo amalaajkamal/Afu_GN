@@ -22,25 +22,48 @@ function write(name, data) {
 }
 
 // ── 1. AFU principles table ────────────────────────────────────────────────
-// Ported verbatim from load_principles_data() in app.py.
-const PRINCIPLES = [
-  [1, "P1: Encourage participation of older adults", 20, 71.0, "Well Implemented"],
-  [2, "P2: Personal & career development", 9, 32.0, "Moderately Implemented"],
-  [3, "P3: Recognize educational needs", 8, 29.0, "Moderately Implemented"],
-  [4, "P4: Intergenerational learning", 15, 54.0, "Well Implemented"],
-  [5, "P5: Online access for older adults", 4, 14.0, "Under Implemented"],
-  [6, "P6: Research agenda informed by aging", 14, 50.0, "Well Implemented"],
-  [7, "P7: Student understanding of longevity", 5, 18.0, "Under Implemented"],
-  [8, "P8: Health, wellness & cultural access", 13, 46.0, "Well Implemented"],
-  [9, "P9: Engage retired community", 7, 25.0, "Moderately Implemented"],
-  [10, "P10: Dialogue with aging organizations", 6, 21.0, "Under Implemented"],
-].map(([number, label, mentions, pct, gapFlag]) => ({
-  principleNumber: number,
-  shortLabel: label,
-  mentions,
-  pct,
-  gapFlag,
-}));
+// Mentions/pct/gapFlag are computed below from the Best Practices CSV (§4)
+// itself, not hand-tallied, so this stays in sync whenever that CSV is
+// refreshed. Only the descriptive label per principle is static curated
+// text (the AFU principle definitions don't change).
+const PRINCIPLE_LABELS = {
+  1: "P1: Encourage participation of older adults",
+  2: "P2: Personal & career development",
+  3: "P3: Recognize educational needs",
+  4: "P4: Intergenerational learning",
+  5: "P5: Online access for older adults",
+  6: "P6: Research agenda informed by aging",
+  7: "P7: Student understanding of longevity",
+  8: "P8: Health, wellness & cultural access",
+  9: "P9: Engage retired community",
+  10: "P10: Dialogue with aging organizations",
+};
+
+function gapFlagFor(pct) {
+  if (pct >= 40) return "Well Implemented";
+  if (pct >= 20) return "Moderately Implemented";
+  return "Under Implemented";
+}
+
+function computePrinciples(bestPractices) {
+  const total = bestPractices.length || 1;
+  const counts = new Map();
+  for (const bp of bestPractices) {
+    for (const p of bp.principles) counts.set(p, (counts.get(p) ?? 0) + 1);
+  }
+  return Array.from({ length: 10 }, (_, i) => {
+    const principleNumber = i + 1;
+    const mentions = counts.get(principleNumber) ?? 0;
+    const pct = Math.round((mentions / total) * 100);
+    return {
+      principleNumber,
+      shortLabel: PRINCIPLE_LABELS[principleNumber],
+      mentions,
+      pct,
+      gapFlag: gapFlagFor(pct),
+    };
+  });
+}
 
 // ── 2. Population 65+ figures (World Bank SP.POP.65UP.TO, 2025) ───────────
 // Ported verbatim from the pop65_dict literal in app.py's Regional Equity
@@ -153,7 +176,7 @@ function extractPrinciples(value) {
 }
 
 function buildBestPractices() {
-  const csvText = readFileSync(join(REPO_ROOT, "Form_Data_Entry-Grid_view.csv"), "utf-8");
+  const csvText = readFileSync(join(REPO_ROOT, "Form Data Entry-Grid view.csv"), "utf-8");
   const rows = csvToObjects(csvText);
 
   const findCol = (headers, needle) =>
@@ -191,14 +214,15 @@ function buildBestPractices() {
 }
 
 console.log("Syncing static data into frontend/public/data/ ...");
-write("principles.json", PRINCIPLES);
+const bestPractices = buildBestPractices();
+write("principles.json", computePrinciples(bestPractices));
 write("population_65.json", POPULATION_65);
 write("static_country_snapshot.json", {
   countries: STATIC_COUNTRIES,
   regions: STATIC_REGIONS,
   institutionsByCountry: STATIC_INSTITUTIONS,
 });
-write("best_practices.json", buildBestPractices());
+write("best_practices.json", bestPractices);
 
 copyFileSync(join(REPO_ROOT, "india_outline.geojson"), join(OUT_DIR, "india_outline.geojson"));
 console.log("  copied india_outline.geojson");

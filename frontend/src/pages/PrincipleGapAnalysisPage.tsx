@@ -4,15 +4,23 @@ import { KpiCard } from "../components/cards/KpiCard";
 import { PrincipleBarChart } from "../components/charts/PrincipleBarChart";
 import { AudienceBarChart } from "../components/charts/AudienceBarChart";
 import { usePrinciples, useBestPractices } from "../hooks/useStaticData";
+import { useDashboardData } from "../hooks/useDashboardData";
 
 export function PrincipleGapAnalysisPage() {
   const principlesQuery = usePrinciples();
   const bestPracticesQuery = useBestPractices();
+  const { kpis, isLoading: dashboardLoading } = useDashboardData();
   const principles = principlesQuery.data ?? [];
 
   const well = principles.filter((p) => p.gapFlag === "Well Implemented").length;
   const moderate = principles.filter((p) => p.gapFlag === "Moderately Implemented").length;
   const under = principles.filter((p) => p.gapFlag === "Under Implemented").length;
+
+  const submissionRateLoading =
+    bestPracticesQuery.isLoading || dashboardLoading || kpis.totalInstitutions === 0;
+  const submissionRate = submissionRateLoading
+    ? "—"
+    : `${Math.round(((bestPracticesQuery.data?.length ?? 0) / kpis.totalInstitutions) * 100)}%`;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -26,7 +34,7 @@ export function PrincipleGapAnalysisPage() {
         <KpiCard value={well} label="Well Implemented" accent="sage" />
         <KpiCard value={moderate} label="Moderately Implemented" accent="amber" />
         <KpiCard value={under} label="Under Implemented" accent="rose" />
-        <KpiCard value="18%" label="Submission Rate" accent="ocean" />
+        <KpiCard value={submissionRate} label="Submission Rate" accent="ocean" />
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-2">

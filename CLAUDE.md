@@ -20,7 +20,7 @@ directory, scraped from https://www.afugn.org/afugn-members. Two pieces:
   (with graceful fallback to a static snapshot if the API is unreachable);
   see "Dashboard ↔ API integration" below. Population-65+ figures, AFU
   principle/gap analysis, and the Best Practices Explorer have no API
-  equivalent and remain static/CSV-driven (`Form_Data_Entry-Grid_view.csv`).
+  equivalent and remain static/CSV-driven (`Form Data Entry-Grid view.csv`).
 - `api_client.py` — thin `requests`-based client used only by `app.py` to
   call `api.py`'s endpoints, with `st.cache_data` caching and
   `(data, error)`-tuple returns so the dashboard can fall back instead of
