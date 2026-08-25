@@ -18,8 +18,18 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { to: "/", label: "Global Overview", shortLabel: "Overview", icon: LayoutGrid },
-  { to: "/principles", label: "Principle Gap Analysis", shortLabel: "Principles", icon: Ruler },
-  { to: "/regional-equity", label: "Regional Equity", shortLabel: "Equity", icon: Compass },
+  {
+    to: "/principles",
+    label: "Principle Implementation Analysis",
+    shortLabel: "Principles",
+    icon: Ruler,
+  },
+  {
+    to: "/regional-equity",
+    label: "Regional Distribution",
+    shortLabel: "Distribution",
+    icon: Compass,
+  },
   {
     to: "/best-practices",
     label: "Best Practices Explorer",

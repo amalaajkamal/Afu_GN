@@ -293,8 +293,8 @@ with st.sidebar:
     st.markdown("## 🎓 AFU GN Dashboard")
     page = st.radio("Navigate", [
         "🌍 Global Overview",
-        "📐 Principle Gap Analysis",
-        "🗺️ Regional Equity",
+        "📐 Principle Implementation Analysis",
+        "🗺️ Regional Distribution",
         "📋 Best Practices Explorer",
     ])
     st.markdown("---")
@@ -663,14 +663,14 @@ if page == "🌍 Global Overview":
                     st.rerun()
 
 # ══════════════════════════════════════════════════════════════════════════
-# PAGE 2 — PRINCIPLE GAP ANALYSIS
+# PAGE 2 — PRINCIPLE IMPLEMENTATION ANALYSIS
 # ══════════════════════════════════════════════════════════════════════════
-elif page == "📐 Principle Gap Analysis":
+elif page == "📐 Principle Implementation Analysis":
 
     st.markdown("""
     <div style="background:#050d1a; padding:6px 0 2px 0;">
         <span style="color:#4FC3F7; font-size:1.1rem; font-weight:800; letter-spacing:0.06em;">
-            📐 AFU PRINCIPLE IMPLEMENTATION GAP ANALYSIS
+            📐 AFU PRINCIPLE IMPLEMENTATION ANALYSIS
         </span>
         <span style="color:#37474F; font-size:0.78rem; margin-left:12px;">
             Based on 28 Best Practice submissions from 20 institutions
@@ -727,8 +727,6 @@ elif page == "📐 Principle Gap Analysis":
     )
     st.plotly_chart(fig_p, use_container_width=True, config={"displayModeBar": False})
 
-    st.markdown('<div style="color:#EF5350; font-size:0.78rem; padding:6px 10px; background:#1a0a0a; border-left:3px solid #EF5350; border-radius:0 4px 4px 0; margin:4px 0;">⚠️ P5 (Online access) cited in only 14% and P7 (Longevity dividend) in only 18% of submissions — the most underimplemented principles across the network.</div>', unsafe_allow_html=True)
-
     # Audience chart — below, full width
     st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin:8px 0 2px;">WHO DO ACTIVITIES TARGET?</div>', unsafe_allow_html=True)
     try:
@@ -755,12 +753,12 @@ elif page == "📐 Principle Gap Analysis":
         st.warning("Upload Form_Data_Entry-Grid_view.csv to the repo to enable audience analysis.")
 
 # ══════════════════════════════════════════════════════════════════════════
-# PAGE 3 — REGIONAL EQUITY
+# PAGE 3 — REGIONAL DISTRIBUTION
 # ══════════════════════════════════════════════════════════════════════════
-elif page == "🗺️ Regional Equity":
+elif page == "🗺️ Regional Distribution":
     st.markdown("""
     <div style="background:#0d1b2a; padding:6px 16px; border-radius:6px; margin-bottom:8px;">
-        <span style="color:#4FC3F7; font-size:1.1rem; font-weight:800; letter-spacing:0.06em;">🗺️ GEOGRAPHIC EQUITY & POPULATION-ADJUSTED ANALYSIS</span>
+        <span style="color:#4FC3F7; font-size:1.1rem; font-weight:800; letter-spacing:0.06em;">🗺️ REGIONAL DISTRIBUTION & POPULATION-ADJUSTED ANALYSIS</span>
         <span style="color:#37474F; font-size:0.78rem; margin-left:12px;">Country coverage gaps and age-adjusted AFU density</span>
     </div>
     """, unsafe_allow_html=True)
@@ -817,7 +815,7 @@ elif page == "🗺️ Regional Equity":
         st.dataframe(df_display, use_container_width=True, hide_index=True, height=215)
 
     with col2:
-        st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:4px;">AFU DENSITY PER MILLION SENIORS (2025)</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#4FC3F7; font-size:0.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:4px;">AFU DENSITY PER MILLION SENIORS</div>', unsafe_allow_html=True)
 
         df_density = df_country[df_country["AFU_Per_Million_Seniors"] > 0].sort_values("AFU_Per_Million_Seniors", ascending=False).copy()
 
