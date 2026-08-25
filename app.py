@@ -139,12 +139,12 @@ def load_principles_data():
         (2,"P2: Personal & career\ndevelopment",9,32.0,"Moderately Implemented"),
         (3,"P3: Recognize educational\nneeds",8,29.0,"Moderately Implemented"),
         (4,"P4: Intergenerational\nlearning",15,54.0,"Well Implemented"),
-        (5,"P5: Online access for\nolder adults",4,14.0,"Underimplemented"),
+        (5,"P5: Online access for\nolder adults",4,14.0,"Under Implemented"),
         (6,"P6: Research agenda\ninformed by aging",14,50.0,"Well Implemented"),
-        (7,"P7: Student understanding\nof longevity",5,18.0,"Underimplemented"),
+        (7,"P7: Student understanding\nof longevity",5,18.0,"Under Implemented"),
         (8,"P8: Health, wellness &\ncultural access",13,46.0,"Well Implemented"),
         (9,"P9: Engage retired\ncommunity",7,25.0,"Moderately Implemented"),
-        (10,"P10: Dialogue with aging\norganizations",6,21.0,"Underimplemented"),
+        (10,"P10: Dialogue with aging\norganizations",6,21.0,"Under Implemented"),
     ], columns=["Principle_Number","Short_Label","Mentions","Pct","Gap_Flag"])
 
 @st.cache_data
@@ -249,7 +249,7 @@ REGION_COLORS = {
 GAP_COLORS = {
     "Well Implemented": "#27AE60",
     "Moderately Implemented": "#F39C12",
-    "Underimplemented": "#E74C3C",
+    "Under Implemented": "#E74C3C",
 }
 
 # ── Live API data ──────────────────────────────────────────────────────────
@@ -681,7 +681,7 @@ elif page == "📐 Principle Implementation Analysis":
     # KPI row
     well = df_principles[df_principles["Gap_Flag"]=="Well Implemented"].shape[0]
     mod  = df_principles[df_principles["Gap_Flag"]=="Moderately Implemented"].shape[0]
-    unde = df_principles[df_principles["Gap_Flag"]=="Underimplemented"].shape[0]
+    unde = df_principles[df_principles["Gap_Flag"]=="Under Implemented"].shape[0]
 
     st.markdown(f"""
     <div style="display:flex; gap:8px; margin:6px 0;">
@@ -695,7 +695,7 @@ elif page == "📐 Principle Implementation Analysis":
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:6px 12px; flex:1; text-align:center; border-top:2px solid #E74C3C;">
             <div style="color:#E74C3C; font-size:1.4rem; font-weight:800;">{unde}</div>
-            <div style="color:#546E7A; font-size:0.65rem; text-transform:uppercase;">Underimplemented</div>
+            <div style="color:#546E7A; font-size:0.65rem; text-transform:uppercase;">Under Implemented</div>
         </div>
         <div style="background:#0a1628; border:1px solid #0d2137; border-radius:6px; padding:6px 12px; flex:2; text-align:center; border-top:2px solid #EF5350;">
             <div style="color:#EF5350; font-size:1.1rem; font-weight:800;">P5 — Only 14% | P7 — Only 18%</div>

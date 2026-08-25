@@ -1,6 +1,7 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { useTheme } from "../../theme/ThemeProvider";
 import { getMapTheme } from "../../lib/mapTheme";
+import { regionColor } from "../../lib/regionTheme";
 import type { RegionRow } from "../../hooks/useDashboardData";
 import type { RegionName } from "../../types/institution";
 
@@ -72,7 +73,16 @@ export function RegionDonutChart({ regions, selected, onSelect }: Props) {
         <tbody>
           {regions.map((r) => (
             <tr key={r.region} className="border-t border-border">
-              <td className="py-1 pr-2">{r.region}</td>
+              <td className="py-1 pr-2">
+                <span className="flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ background: regionColor(r.region) }}
+                  />
+                  {r.region}
+                </span>
+              </td>
               <td className="py-1 tabular-nums">{r.afuInstitutions}</td>
             </tr>
           ))}

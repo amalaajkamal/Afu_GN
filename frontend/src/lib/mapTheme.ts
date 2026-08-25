@@ -42,7 +42,7 @@ const LIGHT: MapTheme = {
   gapColors: {
     "Well Implemented": "#8fa888",
     "Moderately Implemented": "#e0a458",
-    Underimplemented: "#c96a6a",
+    "Under Implemented": "#c96a6a",
   },
 };
 
@@ -70,7 +70,7 @@ const DARK: MapTheme = {
   gapColors: {
     "Well Implemented": "#7e9c77",
     "Moderately Implemented": "#e3b06b",
-    Underimplemented: "#d97f7f",
+    "Under Implemented": "#d97f7f",
   },
 };
 

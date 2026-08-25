@@ -24,7 +24,7 @@ export const REGION_ABBREV: Record<string, string> = {
 export const GAP_COLOR_VAR: Record<string, string> = {
   "Well Implemented": "var(--color-sage)",
   "Moderately Implemented": "var(--color-amber)",
-  Underimplemented: "var(--color-rose)",
+  "Under Implemented": "var(--color-rose)",
 };
 
 export function regionColor(region: string): string {
