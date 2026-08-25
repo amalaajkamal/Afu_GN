@@ -22,7 +22,7 @@ export function DensityBarChart({ rows }: { rows: DensityRow[] }) {
   return (
     <div>
       <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-text-secondary">
-        AFU Density per Million Seniors (2025)
+        AFU Density per Million Seniors
       </h3>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">

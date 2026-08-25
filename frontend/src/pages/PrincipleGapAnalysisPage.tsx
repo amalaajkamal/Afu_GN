@@ -1,7 +1,6 @@
 import { Ruler } from "lucide-react";
 import { PageHeader } from "../components/layout/PageHeader";
 import { KpiCard } from "../components/cards/KpiCard";
-import { Callout } from "../components/cards/Callout";
 import { PrincipleBarChart } from "../components/charts/PrincipleBarChart";
 import { AudienceBarChart } from "../components/charts/AudienceBarChart";
 import { usePrinciples, useBestPractices } from "../hooks/useStaticData";
@@ -18,7 +17,7 @@ export function PrincipleGapAnalysisPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <PageHeader
-        title="Principle Gap Analysis"
+        title="Principle Implementation Analysis"
         subtitle="Based on Best Practice submissions from AFU GN member institutions"
         icon={<Ruler size={20} strokeWidth={2.25} />}
       />
@@ -27,7 +26,7 @@ export function PrincipleGapAnalysisPage() {
         <KpiCard value={well} label="Well Implemented" accent="sage" />
         <KpiCard value={moderate} label="Moderately Implemented" accent="amber" />
         <KpiCard value={under} label="Underimplemented" accent="rose" />
-        <KpiCard value="13%" label="Submission Rate" accent="ocean" />
+        <KpiCard value="18%" label="Submission Rate" accent="ocean" />
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-2">
@@ -37,11 +36,6 @@ export function PrincipleGapAnalysisPage() {
           ) : (
             <PrincipleBarChart principles={principles} />
           )}
-          <Callout tone="warning">
-            <strong>P5 (Online access)</strong> is cited in only <strong>14%</strong> and{" "}
-            <strong>P7 (Longevity dividend)</strong> in only <strong>18%</strong> of submissions — the
-            most underimplemented principles across the network.
-          </Callout>
         </div>
 
         <div className="min-h-0 overflow-y-auto rounded-xl border border-border bg-surface p-4 shadow-sm">

@@ -27,7 +27,7 @@ export function RegionalEquityPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <PageHeader
-        title="Regional Equity"
+        title="Regional Distribution"
         subtitle="Country coverage gaps and age-adjusted AFU density"
         icon={<Compass size={20} strokeWidth={2.25} />}
       />

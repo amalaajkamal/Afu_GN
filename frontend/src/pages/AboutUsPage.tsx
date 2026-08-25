@@ -59,7 +59,7 @@ export function AboutUsPage() {
           </p>
           <div className="grid grid-cols-1 gap-6 py-2 sm:grid-cols-3">
             <TeamPhoto
-              src="/team/johnson.jpg"
+              src="/team/shanthi.jpg"
               name="Dr. Shanthi Johnson"
               role="Host Supervisor"
               linkedin="https://www.linkedin.com/in/shanthi-johnson-533b1110/"
